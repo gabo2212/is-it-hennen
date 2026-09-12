@@ -2,14 +2,22 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { CultBackdrop } from "@/components/CultBackdrop";
 import { slides } from "@/data/slides";
 import { cn } from "@/lib/utils";
 
+function slideFromQuery(raw: string | null) {
+  const n = Number(raw) - 1;
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(slides.length - 1, n));
+}
+
 export function Presentation() {
-  const [index, setIndex] = useState(0);
+  const searchParams = useSearchParams();
+  const [index, setIndex] = useState(() => slideFromQuery(searchParams.get("s")));
   const [direction, setDirection] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const slide = slides[index];
@@ -18,8 +26,12 @@ export function Presentation() {
 
   const go = useCallback(
     (next: number) => {
-      setDirection(next > index ? 1 : -1);
-      setIndex(Math.max(0, Math.min(slides.length - 1, next)));
+      const clamped = Math.max(0, Math.min(slides.length - 1, next));
+      setDirection(clamped > index ? 1 : -1);
+      setIndex(clamped);
+      const url = new URL(window.location.href);
+      url.searchParams.set("s", String(clamped + 1));
+      window.history.replaceState(null, "", url);
     },
     [index],
   );
@@ -109,8 +121,8 @@ export function Presentation() {
         />
       </div>
 
-      <main className="relative z-10 flex min-h-0 flex-1 flex-col px-4 py-3 sm:px-8 lg:px-12">
-        <AnimatePresence mode="wait" custom={direction}>
+      <main className="relative z-10 min-h-0 flex-1">
+        <AnimatePresence mode="wait" initial={false} custom={direction}>
           <motion.div
             key={slide.id}
             custom={direction}
@@ -118,7 +130,7 @@ export function Presentation() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: direction >= 0 ? -28 : 28 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col"
+            className="absolute inset-0 mx-auto flex w-full max-w-6xl flex-col px-4 py-3 sm:px-8 lg:px-12"
           >
             <p className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.22em] text-coral">
               {slide.section}

@@ -133,8 +133,8 @@ export const slides: Slide[] = [
             miss (that 57% false Hennen).
           </p>
         </div>
-        <div className="flex min-h-0 items-stretch">
-          <pre className="h-full w-full overflow-hidden rounded-xl bg-black/40 p-5 font-mono text-[clamp(0.75rem,1.5vh,0.95rem)] leading-relaxed text-lime ring-1 ring-lime/25">
+        <div className="flex min-h-0 items-start">
+          <pre className="w-full rounded-xl bg-black/40 p-5 font-mono text-[clamp(0.75rem,1.5vh,0.95rem)] leading-relaxed text-lime ring-1 ring-lime/25">
             {`photo
   → MTCNN crop / align
   → FaceNet conv1 (live maps)
