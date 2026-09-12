@@ -111,8 +111,9 @@ export const slides: Slide[] = [
           <p className="text-base text-ink-300">
             Same recipe on a public identity (25 photos, held-out test):{" "}
             <span className="text-lime">91% cosine</span>,{" "}
-            <span className="text-lime">100% tiny head</span>. Then we freeze
-            everything and only predict.
+            <span className="text-lime">100% tiny head</span>. Watch it live:{" "}
+            <span className="text-lime">python -m cnn viz</span> — neurons glow
+            with activations, lines are weights (blue +, coral −).
           </p>
         </div>
         <div className="rounded-xl bg-black/40 p-5 font-mono text-sm leading-relaxed text-lime ring-1 ring-lime/25">
@@ -202,6 +203,7 @@ export const slides: Slide[] = [
           ["Output", "HENNEN / NOT HENNEN + confidence"],
           ["Train cost", "Once · ~20–30 Hennen photos"],
           ["Detect cost", "Load .pt · one forward pass"],
+          ["Live viz · 60 FPS", "python -m cnn viz  (Pygame neurons + weights)"],
           ["LFW check · 25 shots", "91% cosine · 100% saved head"],
         ].map(([k, v]) => (
           <div key={k} className="rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10">

@@ -110,7 +110,10 @@ export function Detector() {
           </h1>
           <p className="mt-3 max-w-xl text-ink-300">
             The FaceNet CNN is already trained. This page never trains — it just
-            checks a new photo against the saved Hennen gallery.
+            checks a new photo against the saved Hennen gallery. To watch neurons
+            and weights live (60 FPS Pygame):{" "}
+            <code className="text-lime">python -m cnn viz</code> or{" "}
+            <code className="text-lime">python -m cnn serve --viz</code>.
           </p>
         </div>
 

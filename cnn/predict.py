@@ -27,7 +27,13 @@ class HennenHead(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.net(x)
+        z = self.net[0](x)
+        hidden = self.net[1](z)
+        logits = self.net[3](self.net[2](hidden))
+        self.last_input = x.detach()
+        self.last_hidden = hidden.detach()
+        self.last_logits = logits.detach()
+        return logits
 
 
 @dataclass
@@ -79,6 +85,21 @@ class HennenDetector:
             )
         cosine = float(torch.nn.functional.cosine_similarity(emb, self.proto, dim=0))
         head_p = self._head_prob(emb)
+        try:
+            from cnn.visual import last_conv_maps, push_active, snapshot_from_head
+
+            x = ((emb - self.scaler_mean) / self.scaler_std).unsqueeze(0)
+            push_active(
+                snapshot_from_head(
+                    self.head,
+                    x,
+                    phase="detect · forward pass",
+                    subtitle="live inference (no training)",
+                    conv_maps=last_conv_maps(),
+                )
+            )
+        except Exception:
+            pass
         # Blend cosine-to-gallery with the trained head (both saved at train time).
         cosine_p = 1 / (1 + np.exp(-12 * (cosine - self.threshold)))
         conf = 0.55 * head_p + 0.45 * float(cosine_p)

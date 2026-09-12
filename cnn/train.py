@@ -23,6 +23,7 @@ from cnn.config import (
 from cnn.faces import embed_path
 from cnn.fetch_negatives import fetch_negative_faces
 from cnn.predict import HennenHead, list_images, save_artifact
+from cnn.visual import push_active, snapshot_from_head
 
 
 def _stack_embeddings(paths: list[Path], label: str) -> torch.Tensor:
@@ -42,12 +43,26 @@ def _stack_embeddings(paths: list[Path], label: str) -> torch.Tensor:
 
 
 def _train_head(
-    hennen: torch.Tensor, other: torch.Tensor
+    hennen: torch.Tensor,
+    other: torch.Tensor,
+    *,
+    viz: bool = False,
 ) -> tuple[HennenHead, torch.Tensor, torch.Tensor]:
     x = torch.cat([hennen, other], dim=0)
     y = torch.cat(
         [torch.ones(len(hennen), dtype=torch.long), torch.zeros(len(other), dtype=torch.long)]
     )
+    if viz:
+        from cnn.visual import run_training_window
+
+        return run_training_window(
+            x,
+            y,
+            subtitle="live train · FaceNet embeddings · 512 → 64 → 2",
+            epochs=HEAD_EPOCHS,
+            loop_forever=False,
+        )
+
     mean = x.mean(0)
     std = x.std(0).clamp_min(1e-6)
     x_n = (x - mean) / std
@@ -71,13 +86,24 @@ def _train_head(
     head = HennenHead()
     opt = torch.optim.AdamW(head.parameters(), lr=HEAD_LR, weight_decay=1e-3)
     head.train()
-    for _ in range(HEAD_EPOCHS):
+    for epoch in range(HEAD_EPOCHS):
         perm = torch.randperm(len(x_aug))
         logits = head(x_aug[perm])
         loss = F.cross_entropy(logits, y_aug[perm], weight=weight)
         opt.zero_grad()
         loss.backward()
         opt.step()
+        # Live viz: pull tensors after the update (no autograd).
+        push_active(
+            snapshot_from_head(
+                head,
+                x_aug[perm[:1]],
+                loss=float(loss.detach().cpu()),
+                epoch=epoch + 1,
+                epochs=HEAD_EPOCHS,
+                phase="train · after backward()",
+            )
+        )
     head.eval()
     _ = w
     return head, mean, std
@@ -125,7 +151,7 @@ def _pick_threshold(pos: np.ndarray, neg: np.ndarray) -> tuple[float, dict]:
     return best_t, best_stats
 
 
-def train() -> Path:
+def train(*, viz: bool = False) -> Path:
     HENNEN_DIR.mkdir(parents=True, exist_ok=True)
     hennen_paths = list_images(HENNEN_DIR)
     if len(hennen_paths) < MIN_HENNEN_SHOTS:
@@ -149,7 +175,7 @@ def train() -> Path:
     neg = torch.nn.functional.cosine_similarity(other, proto.unsqueeze(0), dim=1).numpy()
     threshold, cosine_stats = _pick_threshold(pos, neg)
 
-    head, mean, std = _train_head(hennen, other)
+    head, mean, std = _train_head(hennen, other, viz=viz)
 
     # Head accuracy on the (non-augmented) embeddings we actually have.
     with torch.inference_mode():

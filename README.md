@@ -35,6 +35,20 @@ python3 -m cnn serve
 API: [http://127.0.0.1:43124](http://127.0.0.1:43124)  
 Predict a file: `python3 -m cnn predict path/to/photo.jpg`
 
+## Live neural-net window (Pygame, 60 FPS)
+
+Watch activations and weights while the model actually runs:
+
+```bash
+python3 -m cnn viz
+```
+
+- **Neurons** = circles. Size and brightness follow the forward-pass activation.
+- **Weights** = lines. Thickness = `|w|`. Blue = positive, coral = negative.
+- After every `loss.backward()` + `optimizer.step()`, tensors are pulled with `.detach().numpy()` and the canvas redraws.
+
+Also: `python3 -m cnn train --viz` (one-time lock-in) and `python3 -m cnn serve --viz` (window updates on each detect). Space pauses, Esc quits.
+
 ## How it is “as good as possible” with few pics
 
 - **FaceNet** (Inception-ResNet) already trained on **VGGFace2** (~3.3 million faces) — frozen
