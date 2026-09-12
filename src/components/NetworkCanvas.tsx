@@ -170,24 +170,32 @@ export function NetworkCanvas({
       const bottom = cssH - 22;
       const stageH = bottom - top;
       const innerW = cssW - padX * 2;
-      const gutter = Math.max(18, innerW * 0.02);
-      const colW = (innerW - gutter * 4) / 5;
-      const colX = (i: number) => padX + i * (colW + gutter);
+      const gutter = Math.max(16, innerW * 0.016);
+      const usable = innerW - gutter * 4;
+      const weights = [0.12, 0.16, 0.28, 0.23, 0.21];
+      const cols: { left: number; width: number }[] = [];
+      let cx = padX;
+      for (const w of weights) {
+        const width = usable * w;
+        cols.push({ left: cx, width });
+        cx += width + gutter;
+      }
 
-      const faceX = colX(0);
-      const faceSize = Math.min(colW, stageH * 0.5, 220);
-      const convX = colX(1);
-      const embedW = Math.min(colW * 0.82, 120);
-      const embedX = colX(2) + (colW - embedW) / 2;
-      const hidX = colX(3) + colW * 0.42;
-      const outX = colX(4) + Math.min(36, colW * 0.18);
+      const faceX = cols[0].left;
+      const faceSize = Math.min(cols[0].width, stageH * 0.5, 240);
+      const convX = cols[1].left;
+      const embedW = cols[2].width;
+      const embedX = cols[2].left;
+      const hidX = cols[3].left + cols[3].width * 0.45;
+      const outX = cols[4].left + Math.min(40, cols[4].width * 0.16);
+      const pHennen = clamp(shown.output[1] ?? 0.5, 0, 1);
 
       drawScan(ctx, padX, top, innerW, stageH, wave, live || detect);
 
       drawFace(ctx, faceImgRef.current, faceX, top, faceSize, faceSize, wave, now);
-      drawConvMaps(ctx, target.maps, convX, top, colW, stageH, wave, now);
-      const inPts = drawEmbedding(ctx, shown.input, embedX, top, embedW, stageH, wave, now);
-      const hidPts = drawHidden(ctx, shown.hidden, hidX, top, bottom, wave, now);
+      drawConvMaps(ctx, target.maps, convX, top, cols[1].width, stageH, wave, now);
+      const inPts = drawEmbedding(ctx, shown.input, embedX, top, embedW, stageH, wave, now, pHennen);
+      const hidPts = drawHidden(ctx, shown.hidden, hidX, top, bottom, wave, now, pHennen);
       const outPts = drawOutputs(ctx, shown.output, outX, cssH, wave, now);
 
       ctx.globalAlpha = 0.35 + 0.65 * clamp((wave - 0.35) / 0.4, 0, 1);
@@ -366,6 +374,15 @@ function drawConvMaps(
   ctx.globalAlpha = 1;
 }
 
+function mixHue(pHennen: number) {
+  const t = clamp(pHennen, 0, 1);
+  return {
+    r: CORAL.r + (LIME.r - CORAL.r) * t,
+    g: CORAL.g + (LIME.g - CORAL.g) * t,
+    b: CORAL.b + (LIME.b - CORAL.b) * t,
+  };
+}
+
 function drawEmbedding(
   ctx: CanvasRenderingContext2D,
   act: Float32Array,
@@ -375,11 +392,13 @@ function drawEmbedding(
   h: number,
   wave: number,
   now: number,
+  pHennen: number,
 ) {
   const cols = 16;
   const rows = 32;
   const gw = w / cols;
   const gh = (h - 4) / rows;
+  const hue = mixHue(pHennen);
   const pts: { x: number; y: number }[] = [];
   for (let i = 0; i < rows * cols; i++) {
     const r = Math.floor(i / cols);
@@ -388,18 +407,15 @@ function drawEmbedding(
     const py = y + r * gh + gh / 2;
     const reveal = clamp((wave - 0.28 - (r / rows) * 0.35) / 0.2, 0, 1);
     const raw = Math.tanh(act[i] ?? 0);
-    const v = Math.abs(raw) * reveal;
-    const flicker = 0.88 + 0.12 * Math.sin(now / 160 + i * 0.03);
-    const shade = (18 + 200 * v) * flicker;
-    if (raw >= 0) {
-      ctx.fillStyle = `rgba(${shade / 3},${shade * 0.95},${shade / 4},${0.25 + 0.75 * reveal})`;
-    } else {
-      ctx.fillStyle = `rgba(${shade},${shade / 3},${shade / 4},${0.25 + 0.75 * reveal})`;
-    }
-    ctx.fillRect(px - gw / 2 + 0.5, py - gh / 2 + 0.5, Math.max(1, gw - 1), Math.max(1, gh - 1));
+    const mag = Math.abs(raw);
+    const signMul = raw >= 0 ? 1 : 0.38;
+    const flicker = 0.9 + 0.1 * Math.sin(now / 160 + i * 0.03);
+    const v = mag * signMul * reveal * flicker;
+    ctx.fillStyle = rgb(hue, 0.12 + 0.88 * v);
+    ctx.fillRect(px - gw / 2 + 0.4, py - gh / 2 + 0.4, Math.max(1, gw - 0.8), Math.max(1, gh - 0.8));
     pts.push({ x: px, y: py });
   }
-  ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  ctx.strokeStyle = rgb(hue, 0.28);
   ctx.strokeRect(x, y, w, h - 4);
   return pts;
 }
@@ -412,26 +428,28 @@ function drawHidden(
   bottom: number,
   wave: number,
   now: number,
+  pHennen: number,
 ) {
   const pts: { x: number; y: number }[] = [];
   let mx = 1e-6;
   for (let i = 0; i < 64; i++) mx = Math.max(mx, Math.max(act[i] ?? 0, 0));
   const n = 64;
   const gap = (bottom - y) / n;
+  const hue = mixHue(pHennen);
   for (let i = 0; i < n; i++) {
     const py = y + gap * i + gap / 2;
     const reveal = clamp((wave - 0.5 - i * 0.004) / 0.25, 0, 1);
     const v = clamp((Math.max(act[i] ?? 0, 0) / mx) || 0, 0, 1) * reveal;
     const breath = 1 + 0.16 * Math.sin(now / 240 + i * 0.2);
-    const rad = (2.2 + 5.4 * v) * breath;
+    const rad = (3.4 + 8.2 * v) * breath;
     ctx.beginPath();
     ctx.arc(x, py, rad, 0, Math.PI * 2);
-    ctx.fillStyle = rgb(LIME, 0.18 + 0.82 * v);
+    ctx.fillStyle = rgb(hue, 0.18 + 0.82 * v);
     ctx.fill();
-    if (v > 0.35) {
+    if (v > 0.28) {
       ctx.beginPath();
-      ctx.arc(x, py, rad * 2.1, 0, Math.PI * 2);
-      ctx.fillStyle = rgb(LIME, 0.08 * v);
+      ctx.arc(x, py, rad * 2.15, 0, Math.PI * 2);
+      ctx.fillStyle = rgb(hue, 0.09 * v);
       ctx.fill();
     }
     pts.push({ x, y: py });
