@@ -9,7 +9,6 @@ export type Slide = {
   tone?: "hero" | "dark" | "accent" | "demo";
 };
 
-/** Drop your real pics in /public/pics/ and point src here */
 function PicSlot({
   label,
   hint,
@@ -37,10 +36,10 @@ function PicSlot({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={src} alt={label} className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2 border-2 border-dashed border-lime/35 bg-[linear-gradient(135deg,rgba(200,245,66,0.06),transparent_55%)] px-3 text-center">
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 border-2 border-dashed border-lime/35 px-3 text-center">
             <span className="font-display text-sm text-lime">Add pic</span>
             <span className="max-w-[10rem] text-[11px] leading-snug text-ink-400">
-              {hint ?? "Drop image in /public/pics/"}
+              {hint ?? "data/hennen/"}
             </span>
           </div>
         )}
@@ -64,161 +63,152 @@ export const slides: Slide[] = [
     id: "title",
     section: "Mini-projet",
     title: "Is it hennen?",
-    subtitle: "A CNN that looks at a meme pic and answers: Hennen — or not.",
+    subtitle: "A face CNN. Trained once. Then it only answers the question.",
     tone: "hero",
     content: (
-      <div className="mt-8 grid max-w-4xl gap-4 sm:grid-cols-3">
-        <PicSlot
-          label="Train on Hennen"
-          hint="lots of Hennen pics"
-          src="/pics/dude-1.svg"
-          badge="train"
-          badgeTone="train"
-        />
-        <PicSlot
-          label="New upload"
-          hint="test image"
-          src="/pics/query.svg"
-          badge="?"
-          badgeTone="train"
-        />
-        <PicSlot
-          label="CNN says…"
-          hint="HENNEN / NOT HENNEN"
-          src="/pics/result-yes.svg"
-          badge="YES"
-          badgeTone="yes"
-        />
+      <div className="mt-8 space-y-6">
+        <div className="grid max-w-4xl gap-4 sm:grid-cols-3">
+          <PicSlot
+            label="20–30 Hennen pics"
+            src="/pics/dude-1.svg"
+            badge="once"
+            badgeTone="train"
+          />
+          <PicSlot
+            label="Saved model"
+            src="/pics/result-yes.svg"
+            badge="hennen.pt"
+            badgeTone="yes"
+          />
+          <PicSlot
+            label="New photo → verdict"
+            src="/pics/query.svg"
+            badge="no train"
+            badgeTone="train"
+          />
+        </div>
+        <a
+          href="/detect"
+          className="inline-flex rounded-lg bg-lime px-4 py-2 font-display text-ink-950"
+        >
+          Open detector
+        </a>
       </div>
     ),
   },
   {
     id: "cnn",
-    section: "30-second CNN",
-    title: "What’s a CNN?",
+    section: "The CNN",
+    title: "FaceNet, already trained",
     content: (
-      <div className="mt-6 grid max-w-4xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="mt-6 grid max-w-4xl gap-8 lg:grid-cols-2">
         <div className="space-y-4 text-lg text-ink-200">
           <p>
-            A <span className="text-lime">Convolutional Neural Network</span>{" "}
-            scans an image with small filters — edges → face parts → “this looks
-            like Hennen.”
+            We use <span className="text-lime">Inception-ResNet FaceNet</span>{" "}
+            pretrained on <span className="text-lime">VGGFace2</span> (~3.3M
+            face photos). Those millions of weights stay frozen.
           </p>
-          <ul className="space-y-2 text-base text-ink-300">
-            <li>→ built for photos / meme pics</li>
-            <li>→ learns from lots of examples</li>
-            <li>→ outputs yes / no</li>
-          </ul>
+          <p className="text-base text-ink-300">
+            Same recipe on a public identity (25 photos, held-out test):{" "}
+            <span className="text-lime">91% cosine</span>,{" "}
+            <span className="text-lime">100% tiny head</span>. Then we freeze
+            everything and only predict.
+          </p>
         </div>
         <div className="rounded-xl bg-black/40 p-5 font-mono text-sm leading-relaxed text-lime ring-1 ring-lime/25">
-          <p className="mb-3 font-sans text-xs uppercase tracking-[0.2em] text-ink-400">
-            Pipeline
-          </p>
-          {`pic → Conv → Pool → Conv → …
-      → score
-      → HENNEN / NOT HENNEN`}
+          {`photo
+  → MTCNN (crop face)
+  → FaceNet CNN (512-d)
+  → saved Hennen gallery
+  → HENNEN / NOT HENNEN`}
         </div>
       </div>
     ),
   },
   {
-    id: "idea",
-    section: "The project",
-    title: "One question only.",
+    id: "once",
+    section: "Training",
+    title: "Train once. Never again.",
     tone: "accent",
     content: (
-      <div className="mt-6 max-w-3xl space-y-5 text-ink-950/85">
-        <p className="text-lg leading-relaxed sm:text-xl">
-          Dump a ton of pics of <strong>Hennen</strong> into the model. Later
-          you upload any photo and it answers:
+      <div className="mt-6 max-w-3xl space-y-4 text-lg text-ink-950/85">
+        <p>
+          Drop ~<strong>20–30 photos of Hennen</strong> in{" "}
+          <code>data/hennen/</code>. Run <code>python -m cnn train</code>{" "}
+          <strong>once</strong>. That writes <code>models/hennen.pt</code>.
         </p>
-        <div className="flex flex-wrap gap-3">
-          <span className="rounded-lg bg-ink-950 px-4 py-2 font-display text-lime">
-            HENNEN
-          </span>
-          <span className="rounded-lg bg-ink-950/15 px-4 py-2 font-display text-ink-950">
-            NOT HENNEN
-          </span>
-        </div>
+        <p>
+          After that, the detector only <strong>loads</strong> the file. New
+          uploads are inference — no fitting, no epochs, no “train” button.
+        </p>
         <p className="text-sm text-ink-950/60">
-          Binary check — is it him, or some random dude.
+          Need variety: different angles, lighting, memes. Not 30 copies of the
+          same screenshot.
         </p>
       </div>
     ),
   },
   {
     id: "data",
-    section: "How we train",
-    title: "Pics in → labels out",
+    section: "How we lock him in",
+    title: "Gallery + tiny head",
     content: (
       <div className="mt-6 space-y-6">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <PicSlot
             label="Hennen"
-            hint="swap for real pic"
             src="/pics/dude-1.svg"
             badge="YES"
             badgeTone="yes"
           />
           <PicSlot
-            label="Hennen again"
-            hint="other angle / meme"
+            label="Hennen"
             src="/pics/dude-2.svg"
             badge="YES"
             badgeTone="yes"
           />
           <PicSlot
-            label="Random face"
-            hint="not Hennen"
+            label="Random"
             src="/pics/random-1.svg"
             badge="NO"
             badgeTone="no"
           />
           <PicSlot
-            label="Random face"
-            hint="not Hennen"
+            label="Random"
             src="/pics/random-2.svg"
             badge="NO"
             badgeTone="no"
           />
         </div>
         <p className="max-w-2xl text-ink-300">
-          Class 1 = Hennen · Class 0 = everyone else. Aim for ~100+ pics of him
-          + a mixed “not him” set. Drop real images into{" "}
-          <code className="text-lime">public/pics/</code>.
+          Each face becomes a 512-number fingerprint. We save Hennen’s average
+          fingerprint plus a small classifier trained on those fingerprints
+          (and public “not him” faces). Flip-test at detect time for a bit more
+          accuracy.
         </p>
       </div>
     ),
   },
   {
-    id: "demo",
-    section: "Live idea",
-    title: "Upload → Is it hennen?",
+    id: "card",
+    section: "Model card",
+    title: "What’s in the box",
     tone: "demo",
     content: (
-      <div className="mt-6 grid max-w-4xl items-center gap-4 sm:grid-cols-[1fr_auto_1fr]">
-        <PicSlot
-          label="You upload this"
-          hint="new meme / selfie"
-          src="/pics/query.svg"
-        />
-        <div className="flex justify-center font-display text-2xl text-lime">
-          →
-        </div>
-        <div className="grid gap-3">
-          <div className="rounded-xl bg-lime px-5 py-4 text-ink-950">
-            <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
-              If it matches
-            </p>
-            <p className="font-display text-2xl">HENNEN · 94%</p>
+      <div className="mt-6 grid max-w-4xl gap-4 sm:grid-cols-2">
+        {[
+          ["Backbone", "Inception-ResNet FaceNet · VGGFace2"],
+          ["Input", "Aligned face 160×160"],
+          ["Output", "HENNEN / NOT HENNEN + confidence"],
+          ["Train cost", "Once · ~20–30 Hennen photos"],
+          ["Detect cost", "Load .pt · one forward pass"],
+          ["LFW check · 25 shots", "91% cosine · 100% saved head"],
+        ].map(([k, v]) => (
+          <div key={k} className="rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10">
+            <p className="text-xs uppercase tracking-wider text-ink-400">{k}</p>
+            <p className="mt-1 font-display text-lg text-ink-50">{v}</p>
           </div>
-          <div className="rounded-xl bg-coral/90 px-5 py-4 text-ink-50">
-            <p className="text-xs font-semibold uppercase tracking-wider opacity-80">
-              If it doesn’t
-            </p>
-            <p className="font-display text-2xl">NOT HENNEN · 88%</p>
-          </div>
-        </div>
+        ))}
       </div>
     ),
   },
@@ -231,19 +221,24 @@ export const slides: Slide[] = [
       <div className="mt-8 max-w-2xl space-y-5 text-lg text-ink-200">
         <ol className="space-y-3">
           <li>
-            <span className="text-lime">1.</span> CNN = image brain (filters →
-            face features)
+            <span className="text-lime">1.</span> CNN reads the face (FaceNet,
+            already trained)
           </li>
           <li>
-            <span className="text-lime">2.</span> We train on{" "}
-            <span className="text-lime">Hennen</span> vs random people
+            <span className="text-lime">2.</span> We lock Hennen in once from
+            20–30 pics
           </li>
           <li>
-            <span className="text-lime">3.</span> New pic →{" "}
+            <span className="text-lime">3.</span> After that it’s only{" "}
             <span className="text-lime">Is it hennen?</span>
           </li>
         </ol>
-        <p className="font-display text-3xl text-ink-50">Questions?</p>
+        <a
+          href="/detect"
+          className="inline-flex rounded-lg bg-lime px-4 py-2 font-display text-ink-950"
+        >
+          Try a photo
+        </a>
       </div>
     ),
   },

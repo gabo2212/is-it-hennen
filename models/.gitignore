@@ -1,0 +1,2 @@
+# Trained artifacts (hennen.pt is created by `python -m cnn train`)
+*.meta.pkl

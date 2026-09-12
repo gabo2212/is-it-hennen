@@ -1,29 +1,52 @@
-# Is it hennen? — CNN Presentation
+# Is it hennen?
 
-Short **6-slide** deck for a meme/person CNN mini-project:
+CNN mini-project: **train once** on ~20–30 photos of Hennen, then the detector only answers **HENNEN / NOT HENNEN**. It does not train when you upload a test photo.
 
-> Train on tons of pics of **Hennen** → upload a new pic → model says **HENNEN** or **NOT HENNEN**.
-
-## Run
+## Run the slides
 
 ```bash
 npm install
-npm run dev -- --port 43123
+npm run dev -- --port 43123 --hostname 127.0.0.1
 ```
 
-Open [http://127.0.0.1:43123](http://127.0.0.1:43123)
+[http://127.0.0.1:43123](http://127.0.0.1:43123) — presentation  
+[http://127.0.0.1:43123/detect](http://127.0.0.1:43123/detect) — detector (needs the API below)
 
-**Controls:** ← → · Space · F fullscreen
+## Train the person CNN — once
 
-## Put your real pics in
+1. Put **20–30 photos of Hennen** (jpg/png, face visible) in `data/hennen/`
+2. Install Python deps: `python3 -m pip install -r cnn/requirements.txt`
+3. Lock him in:
 
-Replace the placeholders in `public/pics/` and update paths in `src/data/slides.tsx` (e.g. `/pics/hennen-1.jpg`).
+```bash
+python3 -m cnn train
+```
 
-## Slides (6)
+That writes `models/hennen.pt` (gallery + tiny classifier). Public “not Hennen” faces are downloaded automatically into `data/not_hennen/` if that folder is empty.
 
-1. Title — Is it hennen?  
-2. What’s a CNN (30 sec)  
-3. Project idea  
-4. Training pics (YES/NO)  
-5. Upload → verdict  
-6. Takeaways + questions  
+**Do not retrain for every photo.** After `hennen.pt` exists, detection is a forward pass only.
+
+## Start the detector API
+
+```bash
+python3 -m cnn serve
+```
+
+API: [http://127.0.0.1:43124](http://127.0.0.1:43124)  
+Predict a file: `python3 -m cnn predict path/to/photo.jpg`
+
+## How it is “as good as possible” with few pics
+
+- **FaceNet** (Inception-ResNet) already trained on **VGGFace2** (~3.3 million faces) — frozen
+- **MTCNN** crops/aligns the face so memes and messy photos still work
+- **512-d embeddings** + Hennen prototype (average fingerprint)
+- Tiny neural **head trained once** on those embeddings
+- Horizontal-flip **TTA** at detect time
+- Same recipe is checked on a public LFW identity with 25 shots: **91% cosine accuracy**, **100% tiny-head accuracy** on held-out faces (`python3 -m cnn benchmark`)
+
+## Layout
+
+- `src/` — 6-slide deck + `/detect` UI
+- `cnn/` — train / serve / predict
+- `data/hennen/` — your photos (required for training)
+- `models/hennen.pt` — saved model after the one-time train

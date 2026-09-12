@@ -1,0 +1,10 @@
+{
+  "identity": "George W Bush",
+  "shots": 25,
+  "test_pos": 40,
+  "test_neg": 40,
+  "cosine_threshold": 0.8040089011192322,
+  "cosine_accuracy": 0.9125,
+  "head_accuracy": 1.0,
+  "backbone": "InceptionResnetV1-VGGFace2"
+}

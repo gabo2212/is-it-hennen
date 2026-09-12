@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { slides } from "@/data/slides";
@@ -94,13 +95,26 @@ export function Presentation() {
             {slide.section}
           </span>
         </div>
-        <div
-          className={cn(
-            "font-mono text-xs tabular-nums",
-            slide.tone === "accent" ? "text-ink-950/70" : "text-ink-400",
-          )}
-        >
-          {String(index + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/detect"
+            className={cn(
+              "rounded-md px-2.5 py-1 text-xs font-semibold uppercase tracking-wider",
+              slide.tone === "accent"
+                ? "bg-ink-950 text-lime"
+                : "bg-lime text-ink-950",
+            )}
+          >
+            Detector
+          </Link>
+          <span
+            className={cn(
+              "font-mono text-xs tabular-nums",
+              slide.tone === "accent" ? "text-ink-950/70" : "text-ink-400",
+            )}
+          >
+            {String(index + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
+          </span>
         </div>
       </header>
 

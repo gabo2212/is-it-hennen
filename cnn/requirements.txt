@@ -1,0 +1,11 @@
+torch>=2.2.0
+torchvision>=0.17.0
+facenet-pytorch>=2.6.0
+pillow>=10.2.0
+numpy>=1.26.0
+scikit-learn>=1.4.0
+fastapi>=0.115.0
+uvicorn>=0.32.0
+python-multipart>=0.0.9
+opencv-python-headless>=4.8.0
+tqdm>=4.66.0
