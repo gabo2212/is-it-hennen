@@ -9,7 +9,7 @@ export type Slide = {
   tone?: "hero" | "dark" | "accent" | "demo";
 };
 
-/** Drop your real meme pics in /public/pics/ and point src here */
+/** Drop your real pics in /public/pics/ and point src here */
 function PicSlot({
   label,
   hint,
@@ -63,14 +63,14 @@ export const slides: Slide[] = [
   {
     id: "title",
     section: "Mini-projet",
-    title: "Same Dude?",
-    subtitle: "A CNN that tells if a meme pic is your guy — or a random one.",
+    title: "Is it hennen?",
+    subtitle: "A CNN that looks at a meme pic and answers: Hennen — or not.",
     tone: "hero",
     content: (
       <div className="mt-8 grid max-w-4xl gap-4 sm:grid-cols-3">
         <PicSlot
-          label="Train on him"
-          hint="meme face / your dude"
+          label="Train on Hennen"
+          hint="lots of Hennen pics"
           src="/pics/dude-1.svg"
           badge="train"
           badgeTone="train"
@@ -84,9 +84,9 @@ export const slides: Slide[] = [
         />
         <PicSlot
           label="CNN says…"
-          hint="SAME DUDE / NOPE"
+          hint="HENNEN / NOT HENNEN"
           src="/pics/result-yes.svg"
-          badge="SAME"
+          badge="YES"
           badgeTone="yes"
         />
       </div>
@@ -101,13 +101,13 @@ export const slides: Slide[] = [
         <div className="space-y-4 text-lg text-ink-200">
           <p>
             A <span className="text-lime">Convolutional Neural Network</span>{" "}
-            scans an image with small filters — edges → face parts → “this
-            person.”
+            scans an image with small filters — edges → face parts → “this looks
+            like Hennen.”
           </p>
           <ul className="space-y-2 text-base text-ink-300">
-            <li>→ better than a normal net for photos</li>
-            <li>→ learns looks from lots of examples</li>
-            <li>→ outputs a yes/no (or a score)</li>
+            <li>→ built for photos / meme pics</li>
+            <li>→ learns from lots of examples</li>
+            <li>→ outputs yes / no</li>
           </ul>
         </div>
         <div className="rounded-xl bg-black/40 p-5 font-mono text-sm leading-relaxed text-lime ring-1 ring-lime/25">
@@ -116,7 +116,7 @@ export const slides: Slide[] = [
           </p>
           {`pic → Conv → Pool → Conv → …
       → score
-      → SAME DUDE / RANDOM`}
+      → HENNEN / NOT HENNEN`}
         </div>
       </div>
     ),
@@ -124,25 +124,24 @@ export const slides: Slide[] = [
   {
     id: "idea",
     section: "The project",
-    title: "One person. Two answers.",
+    title: "One question only.",
     tone: "accent",
     content: (
       <div className="mt-6 max-w-3xl space-y-5 text-ink-950/85">
         <p className="text-lg leading-relaxed sm:text-xl">
-          Feed the model a pile of pics of <strong>the same dude</strong> (meme
-          character, friend, celebrity face — whatever). Later you upload any
-          photo and it answers:
+          Dump a ton of pics of <strong>Hennen</strong> into the model. Later
+          you upload any photo and it answers:
         </p>
         <div className="flex flex-wrap gap-3">
           <span className="rounded-lg bg-ink-950 px-4 py-2 font-display text-lime">
-            SAME DUDE
+            HENNEN
           </span>
           <span className="rounded-lg bg-ink-950/15 px-4 py-2 font-display text-ink-950">
-            RANDOM DUDE
+            NOT HENNEN
           </span>
         </div>
         <p className="text-sm text-ink-950/60">
-          Binary person check — not “is it funny,” not 50 meme templates.
+          Binary check — is it him, or some random dude.
         </p>
       </div>
     ),
@@ -155,37 +154,37 @@ export const slides: Slide[] = [
       <div className="mt-6 space-y-6">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <PicSlot
-            label="Dude A"
-            hint="swap for real meme"
+            label="Hennen"
+            hint="swap for real pic"
             src="/pics/dude-1.svg"
             badge="YES"
             badgeTone="yes"
           />
           <PicSlot
-            label="Dude A again"
-            hint="different angle / meme"
+            label="Hennen again"
+            hint="other angle / meme"
             src="/pics/dude-2.svg"
             badge="YES"
             badgeTone="yes"
           />
           <PicSlot
             label="Random face"
-            hint="someone else"
+            hint="not Hennen"
             src="/pics/random-1.svg"
             badge="NO"
             badgeTone="no"
           />
           <PicSlot
             label="Random face"
-            hint="someone else"
+            hint="not Hennen"
             src="/pics/random-2.svg"
             badge="NO"
             badgeTone="no"
           />
         </div>
         <p className="max-w-2xl text-ink-300">
-          Class 1 = your guy · Class 0 = everyone else. Aim for ~100+ pics of
-          him + a mixed “not him” set. Drop real images into{" "}
+          Class 1 = Hennen · Class 0 = everyone else. Aim for ~100+ pics of him
+          + a mixed “not him” set. Drop real images into{" "}
           <code className="text-lime">public/pics/</code>.
         </p>
       </div>
@@ -194,7 +193,7 @@ export const slides: Slide[] = [
   {
     id: "demo",
     section: "Live idea",
-    title: "Upload → verdict",
+    title: "Upload → Is it hennen?",
     tone: "demo",
     content: (
       <div className="mt-6 grid max-w-4xl items-center gap-4 sm:grid-cols-[1fr_auto_1fr]">
@@ -211,13 +210,13 @@ export const slides: Slide[] = [
             <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
               If it matches
             </p>
-            <p className="font-display text-2xl">SAME DUDE · 94%</p>
+            <p className="font-display text-2xl">HENNEN · 94%</p>
           </div>
           <div className="rounded-xl bg-coral/90 px-5 py-4 text-ink-50">
             <p className="text-xs font-semibold uppercase tracking-wider opacity-80">
               If it doesn’t
             </p>
-            <p className="font-display text-2xl">RANDOM DUDE · 88%</p>
+            <p className="font-display text-2xl">NOT HENNEN · 88%</p>
           </div>
         </div>
       </div>
@@ -237,11 +236,11 @@ export const slides: Slide[] = [
           </li>
           <li>
             <span className="text-lime">2.</span> We train on{" "}
-            <span className="text-lime">one person</span> vs random people
+            <span className="text-lime">Hennen</span> vs random people
           </li>
           <li>
             <span className="text-lime">3.</span> New pic →{" "}
-            <span className="text-lime">same dude / nope</span>
+            <span className="text-lime">Is it hennen?</span>
           </li>
         </ol>
         <p className="font-display text-3xl text-ink-50">Questions?</p>

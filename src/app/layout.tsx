@@ -19,9 +19,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Same Dude? · CNN Presentation",
+  title: "Is it hennen? · CNN Presentation",
   description:
-    "Short CNN presentation: train on one person in meme pics, then detect same dude vs random dude.",
+    "Short CNN presentation: train on Hennen pics, then answer — is it hennen or not?",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
