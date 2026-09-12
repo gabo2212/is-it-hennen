@@ -1,5 +1,7 @@
 export type VizEdge = { s: number; d: number; w: number };
 
+export type ConvMaps = { c: number; s: number; px: number[] };
+
 export type VizPayload = {
   seq: number;
   input: number[];
@@ -13,6 +15,8 @@ export type VizPayload = {
   phase: string;
   title: string;
   subtitle: string;
+  maps?: ConvMaps | null;
+  face?: string | null;
 };
 
 export const IDLE_VIZ: VizPayload = {
@@ -28,4 +32,6 @@ export const IDLE_VIZ: VizPayload = {
   phase: "idle",
   title: "Is it hennen?",
   subtitle: "waiting for a forward pass",
+  maps: null,
+  face: null,
 };

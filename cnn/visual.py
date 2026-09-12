@@ -39,6 +39,8 @@ class Snapshot:
     w1: np.ndarray
     w2: np.ndarray
     conv_maps: np.ndarray | None = None
+    maps: dict | None = None
+    face: str | None = None
     loss: float | None = None
     epoch: int | None = None
     epochs: int | None = None
@@ -58,6 +60,8 @@ def snapshot_from_head(
     title: str = "Is it hennen?",
     subtitle: str = "",
     conv_maps: np.ndarray | None = None,
+    maps: dict | None = None,
+    face: str | None = None,
 ) -> Snapshot:
     """Run a forward pass, then pack activations + weights as numpy (no grad)."""
     was_training = head.training
@@ -82,6 +86,8 @@ def snapshot_from_head(
         w1=w1,
         w2=w2,
         conv_maps=conv_maps,
+        maps=maps,
+        face=face,
         loss=loss,
         epoch=epoch,
         epochs=epochs,
@@ -124,6 +130,8 @@ def snapshot_to_payload(snap: Snapshot) -> dict:
         "phase": snap.phase,
         "title": snap.title,
         "subtitle": snap.subtitle,
+        "maps": snap.maps,
+        "face": snap.face,
     }
 
 
@@ -162,6 +170,8 @@ def read_payload() -> dict:
         "phase": "idle",
         "title": "Is it hennen?",
         "subtitle": "waiting for a forward pass",
+        "maps": None,
+        "face": None,
     }
 
 
@@ -217,6 +227,8 @@ class NetworkViz:
             w1=mix(s.w1, t.w1),
             w2=mix(s.w2, t.w2),
             conv_maps=t.conv_maps,
+            maps=t.maps,
+            face=t.face,
             loss=t.loss,
             epoch=t.epoch,
             epochs=t.epochs,

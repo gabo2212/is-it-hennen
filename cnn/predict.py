@@ -91,8 +91,10 @@ class HennenDetector:
         label = "HENNEN" if is_hennen else "NOT HENNEN"
         confidence = p_hennen if is_hennen else 1.0 - p_hennen
         try:
+            from cnn.faces import consume_facenet_viz
             from cnn.visual import last_conv_maps, push_active, snapshot_from_head
 
+            bundle = consume_facenet_viz()
             x = ((emb - self.scaler_mean) / self.scaler_std).unsqueeze(0)
             snap = snapshot_from_head(
                 self.head,
@@ -100,6 +102,8 @@ class HennenDetector:
                 phase="detect · forward pass",
                 subtitle=f"{label}  {confidence:.0%}",
                 conv_maps=last_conv_maps(),
+                maps=bundle.get("maps"),
+                face=bundle.get("face"),
             )
             snap.output_act = np.array([1.0 - p_hennen, p_hennen], dtype=np.float32)
             snap.epoch = None
