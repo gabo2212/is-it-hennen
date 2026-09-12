@@ -6,7 +6,7 @@ The network trains **once**. Detection never retrains.
 
 ## What you get
 
-- `/` — 6-slide deck (CNN, FaceNet, training, live scan)
+- `/` — 7-slide deck (press **F** for fullscreen). Arrow keys / space to present.
 - `/detect` — drop a photo, live scan through MTCNN → conv1 → 512-d → 64 hidden → HENNEN / NOT HENNEN
 - `models/hennen.pt` — the trained artifact (~176 KB). This is what you copy if you want someone else to run *your* person.
 

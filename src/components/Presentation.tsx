@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 export function Presentation() {
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const slide = slides[index];
   const progress = ((index + 1) / slides.length) * 100;
   const accent = slide.tone === "accent";
@@ -22,6 +23,29 @@ export function Presentation() {
     },
     [index],
   );
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      void document.documentElement.requestFullscreen();
+    } else {
+      void document.exitFullscreen();
+    }
+  }, []);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const prevHtml = html.style.overflow;
+    const prevBody = document.body.style.overflow;
+    html.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    const onFs = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onFs);
+    return () => {
+      html.style.overflow = prevHtml;
+      document.body.style.overflow = prevBody;
+      document.removeEventListener("fullscreenchange", onFs);
+    };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -36,29 +60,34 @@ export function Presentation() {
       } else if (e.key === "End") {
         go(slides.length - 1);
       } else if (e.key === "f" || e.key === "F") {
-        if (!document.fullscreenElement) {
-          void document.documentElement.requestFullscreen();
-        } else {
-          void document.exitFullscreen();
-        }
+        toggleFullscreen();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [go, index]);
+  }, [go, index, toggleFullscreen]);
 
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-hidden text-ink-50">
+    <div className="relative flex h-dvh max-h-dvh flex-col overflow-hidden text-ink-50">
       <CultBackdrop variant={accent ? "lime" : "default"} />
 
-      <header className="relative z-10 flex items-center justify-between gap-4 px-5 py-4 sm:px-10">
-        <div className="flex items-center gap-3">
+      <header className="relative z-10 flex shrink-0 items-center justify-between gap-3 px-4 py-2 sm:px-8">
+        <div className="flex min-w-0 items-center gap-3">
           <span className="font-display text-sm italic tracking-wide text-lime">
             Is it hennen? · CNN
           </span>
-          <span className="hidden text-sm text-ink-400 sm:inline">{slide.section}</span>
+          <span className="hidden truncate text-sm text-ink-400 sm:inline">
+            {slide.section}
+          </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="rounded-md border border-white/15 bg-white/5 px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-ink-200 hover:bg-white/10"
+          >
+            {isFullscreen ? "Exit" : "Full"} · F
+          </button>
           <Link
             href="/detect"
             className="rounded-md bg-lime px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-ink-950"
@@ -71,7 +100,7 @@ export function Presentation() {
         </div>
       </header>
 
-      <div className="relative h-px w-full bg-white/10">
+      <div className="relative h-px w-full shrink-0 bg-white/10">
         <motion.div
           className="h-full bg-lime"
           initial={false}
@@ -80,64 +109,48 @@ export function Presentation() {
         />
       </div>
 
-      <main className="relative z-10 flex flex-1 flex-col justify-center px-5 py-8 sm:px-10 sm:py-12 lg:px-16">
+      <main className="relative z-10 flex min-h-0 flex-1 flex-col px-4 py-3 sm:px-8 lg:px-12">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={slide.id}
             custom={direction}
-            initial={{ opacity: 0, x: direction >= 0 ? 48 : -48, filter: "blur(6px)" }}
-            animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, x: direction >= 0 ? -36 : 36, filter: "blur(4px)" }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="mx-auto w-full max-w-6xl"
+            initial={{ opacity: 0, x: direction >= 0 ? 36 : -36 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: direction >= 0 ? -28 : 28 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col"
           >
-            <motion.p
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="text-xs font-semibold uppercase tracking-[0.22em] text-coral"
-            >
+            <p className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.22em] text-coral">
               {slide.section}
-            </motion.p>
-            <motion.h1
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.4 }}
+            </p>
+            <h1
               className={cn(
-                "mt-3 font-display text-4xl leading-[1.05] tracking-tight italic sm:text-5xl lg:text-6xl",
+                "mt-1 shrink-0 font-display leading-[1.05] tracking-tight italic",
+                "text-[clamp(1.65rem,4.6vh,3.4rem)]",
                 accent ? "text-lime" : "text-ink-50",
               )}
             >
               {slide.title}
-            </motion.h1>
+            </h1>
             {slide.subtitle && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.18 }}
-                className="mt-4 max-w-2xl text-lg text-ink-300 sm:text-xl"
-              >
+              <p className="mt-1.5 max-w-3xl shrink-0 text-[clamp(0.85rem,1.7vh,1.125rem)] leading-snug text-ink-300">
                 {slide.subtitle}
-              </motion.p>
+              </p>
             )}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.16 }}
-            >
+            <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden">
               {slide.content}
-            </motion.div>
+            </div>
           </motion.div>
         </AnimatePresence>
       </main>
 
-      <footer className="relative z-10 flex items-center justify-between gap-3 px-5 py-4 sm:px-10">
+      <footer className="relative z-10 flex shrink-0 items-center justify-between gap-3 px-4 py-2 sm:px-8">
         <Button
           variant="outline"
-          size="lg"
+          size="sm"
           onClick={() => go(index - 1)}
           disabled={index === 0}
-          className="min-w-24 border-white/15 bg-white/5 text-ink-50 hover:bg-white/10"
+          className="min-w-20 border-white/15 bg-white/5 text-ink-50 hover:bg-white/10"
         >
           Prev
         </Button>
@@ -156,10 +169,10 @@ export function Presentation() {
           ))}
         </div>
         <Button
-          size="lg"
+          size="sm"
           onClick={() => go(index + 1)}
           disabled={index === slides.length - 1}
-          className="min-w-24 bg-lime text-ink-950 hover:bg-lime/90"
+          className="min-w-20 bg-lime text-ink-950 hover:bg-lime/90"
         >
           Next
         </Button>

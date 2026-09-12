@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 export type Slide = {
   id: string;
@@ -15,14 +16,14 @@ function PicSlot({
   src,
   badge,
   badgeTone = "yes",
-  wide = false,
+  fit = "cover",
 }: {
   label: string;
   hint?: string;
   src?: string;
   badge?: string;
   badgeTone?: "yes" | "no" | "train";
-  wide?: boolean;
+  fit?: "cover" | "contain";
 }) {
   const badgeClass =
     badgeTone === "yes"
@@ -32,11 +33,18 @@ function PicSlot({
         : "bg-white/15 text-ink-50";
 
   return (
-    <figure className="relative flex flex-col overflow-hidden rounded-xl ring-1 ring-white/15">
-      <div className={`relative bg-ink-900 ${wide ? "aspect-[5/4] sm:aspect-[16/10]" : "aspect-[4/3]"}`}>
+    <figure className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl ring-1 ring-white/15">
+      <div className="relative min-h-0 flex-1 bg-ink-900">
         {src ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt={label} className="h-full w-full object-cover" />
+          <img
+            src={src}
+            alt={label}
+            className={cn(
+              "absolute inset-0 h-full w-full",
+              fit === "contain" ? "object-contain object-center" : "object-cover object-center",
+            )}
+          />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 border-2 border-dashed border-lime/35 px-3 text-center">
             <span className="font-display text-sm text-lime">Add pic</span>
@@ -53,7 +61,7 @@ function PicSlot({
           </span>
         )}
       </div>
-      <figcaption className="bg-black/35 px-3 py-2 text-center text-xs text-ink-300">
+      <figcaption className="shrink-0 bg-black/35 px-3 py-1.5 text-center text-xs text-ink-300">
         {label}
       </figcaption>
     </figure>
@@ -69,8 +77,8 @@ export const slides: Slide[] = [
       "22 real photos. FaceNet frozen. Tiny head trained once. Then it only answers HENNEN / NOT HENNEN.",
     tone: "hero",
     content: (
-      <div className="mt-8 space-y-6">
-        <div className="grid max-w-5xl gap-4 sm:grid-cols-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="grid min-h-0 flex-1 grid-cols-3 gap-3">
           <PicSlot
             label="Dashcam, memes, metro…"
             src="/slides/hennen-dashcam.jpg"
@@ -90,18 +98,18 @@ export const slides: Slide[] = [
             badgeTone="yes"
           />
         </div>
-        <div className="flex flex-wrap gap-2 text-xs uppercase tracking-wider text-ink-400">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 text-xs uppercase tracking-wider text-ink-400">
           <span className="rounded-md bg-white/10 px-2 py-1 text-lime">hennen.pt · 176 KB</span>
           <span className="rounded-md bg-white/10 px-2 py-1">18 train / 4 hold-out</span>
           <span className="rounded-md bg-white/10 px-2 py-1">cosine cut 0.61</span>
           <span className="rounded-md bg-white/10 px-2 py-1">detect never trains</span>
+          <a
+            href="/detect"
+            className="ml-auto inline-flex rounded-lg bg-lime px-3 py-1.5 font-display italic text-ink-950"
+          >
+            Open detector
+          </a>
         </div>
-        <a
-          href="/detect"
-          className="inline-flex rounded-lg bg-lime px-4 py-2 font-display italic text-ink-950"
-        >
-          Open detector
-        </a>
       </div>
     ),
   },
@@ -110,29 +118,31 @@ export const slides: Slide[] = [
     section: "The CNN",
     title: "FaceNet, already trained",
     content: (
-      <div className="mt-6 grid max-w-5xl gap-8 lg:grid-cols-2">
-        <div className="space-y-4 text-lg text-ink-200">
+      <div className="grid min-h-0 flex-1 gap-5 overflow-hidden lg:grid-cols-2">
+        <div className="space-y-3 text-[clamp(0.95rem,1.8vh,1.125rem)] leading-snug text-ink-200">
           <p>
             Backbone is <span className="text-lime">Inception-ResNet FaceNet</span>{" "}
             on <span className="text-lime">VGGFace2</span> (~3.3M faces). Those
             weights stay frozen. We only fit a tiny 512→64→2 head on Hennen’s
             fingerprints.
           </p>
-          <p className="text-base text-ink-300">
+          <p className="text-ink-300">
             MTCNN crops messy shots (car screen, crowd, subway). Identity is
             the FaceNet cosine vs the saved gallery — cut{" "}
             <span className="text-lime">0.61</span>. The head cannot override a
             miss (that 57% false Hennen).
           </p>
         </div>
-        <div className="rounded-xl bg-black/40 p-5 font-mono text-sm leading-relaxed text-lime ring-1 ring-lime/25">
-          {`photo
+        <div className="flex min-h-0 items-stretch">
+          <pre className="h-full w-full overflow-hidden rounded-xl bg-black/40 p-5 font-mono text-[clamp(0.75rem,1.5vh,0.95rem)] leading-relaxed text-lime ring-1 ring-lime/25">
+            {`photo
   → MTCNN crop / align
   → FaceNet conv1 (live maps)
   → 512-d embedding
   → cosine vs Hennen proto
   → tiny head 64 → 2
   → HENNEN / NOT HENNEN`}
+          </pre>
         </div>
       </div>
     ),
@@ -143,7 +153,7 @@ export const slides: Slide[] = [
     title: "Train once. Never again.",
     tone: "accent",
     content: (
-      <div className="mt-6 max-w-3xl space-y-4 text-lg text-ink-200">
+      <div className="max-w-3xl space-y-3 text-[clamp(0.95rem,1.9vh,1.15rem)] leading-snug text-ink-200">
         <p>
           We put <strong>22 photos of Hennen</strong> in{" "}
           <code className="text-lime">data/hennen/</code> and ran{" "}
@@ -151,7 +161,7 @@ export const slides: Slide[] = [
           <strong>once</strong>. That wrote <code className="text-lime">models/hennen.pt</code>{" "}
           (176 KB).
         </p>
-        <ul className="space-y-1 text-base text-ink-300">
+        <ul className="space-y-1 text-ink-300">
           <li>18 train / 4 hold-out</li>
           <li>Hold-out Hennen: <span className="text-lime">4/4</span></li>
           <li>Gallery cosine F1 ≈ 0.94 · tiny-head train acc 100%</li>
@@ -169,8 +179,8 @@ export const slides: Slide[] = [
     section: "How we lock him in",
     title: "Gallery + tiny head",
     content: (
-      <div className="mt-6 space-y-6">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="grid min-h-0 flex-1 grid-cols-3 grid-rows-2 gap-2.5">
           <PicSlot label="Hennen" src="/slides/hennen-close.jpg" badge="YES" badgeTone="yes" />
           <PicSlot label="Hennen" src="/slides/hennen-hoodie.jpg" badge="YES" badgeTone="yes" />
           <PicSlot label="Hennen" src="/slides/hennen-metro.jpg" badge="YES" badgeTone="yes" />
@@ -178,7 +188,7 @@ export const slides: Slide[] = [
           <PicSlot label="Random" src="/slides/not-longhair.jpg" badge="NO" badgeTone="no" />
           <PicSlot label="Random" src="/slides/not-bw.jpg" badge="NO" badgeTone="no" />
         </div>
-        <p className="max-w-3xl text-ink-300">
+        <p className="shrink-0 max-w-3xl text-[clamp(0.8rem,1.5vh,1rem)] leading-snug text-ink-300">
           Each face is a 512-number fingerprint. We save Hennen’s average
           vector plus the tiny classifier. At detect time we flip-test the
           crop. If cosine is under 0.61, it is <span className="text-coral">NOT HENNEN</span> —
@@ -193,15 +203,17 @@ export const slides: Slide[] = [
     title: "Live net on /detect",
     tone: "demo",
     content: (
-      <div className="mt-6 space-y-4">
-        <PicSlot
-          wide
-          label="Same photo: MTCNN crop → conv1 → 512-d → 64 hidden → HENNEN 89%"
-          src="/slides/detect-live.jpg"
-          badge="inference"
-          badgeTone="train"
-        />
-        <p className="max-w-3xl text-sm text-ink-400">
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
+        <div className="min-h-0 flex-1">
+          <PicSlot
+            fit="contain"
+            label="Same photo: MTCNN crop → conv1 → 512-d → 64 hidden → HENNEN 89%"
+            src="/slides/detect-live.jpg"
+            badge="inference"
+            badgeTone="train"
+          />
+        </div>
+        <p className="shrink-0 max-w-3xl text-xs text-ink-400">
           Stats on that page are the trained artifact: 18 Hennen shots, 94
           others, 100% head acc, FaceNet backbone. The canvas is visualization
           — it does not train.
@@ -214,7 +226,7 @@ export const slides: Slide[] = [
     section: "Model card",
     title: "What’s in the box",
     content: (
-      <div className="mt-6 grid max-w-4xl gap-4 sm:grid-cols-2">
+      <div className="grid min-h-0 flex-1 grid-cols-2 gap-2.5 overflow-hidden sm:grid-cols-2">
         {[
           ["Backbone", "FaceNet Inception-ResNet · VGGFace2 · frozen"],
           ["Input", "MTCNN-aligned face 160×160"],
@@ -225,9 +237,11 @@ export const slides: Slide[] = [
           ["Identity cut", "cosine ≥ 0.61 vs gallery proto"],
           ["Detect", "Load .pt · one forward pass · /detect"],
         ].map(([k, v]) => (
-          <div key={k} className="rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10">
-            <p className="text-xs uppercase tracking-wider text-ink-400">{k}</p>
-            <p className="mt-1 font-display text-lg text-ink-50">{v}</p>
+          <div key={k} className="flex min-h-0 flex-col justify-center rounded-xl bg-white/5 px-4 py-2 ring-1 ring-white/10">
+            <p className="text-[11px] uppercase tracking-wider text-ink-400">{k}</p>
+            <p className="mt-0.5 font-display text-[clamp(0.95rem,2vh,1.2rem)] leading-snug text-ink-50">
+              {v}
+            </p>
           </div>
         ))}
       </div>
@@ -239,8 +253,8 @@ export const slides: Slide[] = [
     title: "Easy takeaways",
     tone: "hero",
     content: (
-      <div className="mt-8 max-w-2xl space-y-5 text-lg text-ink-200">
-        <ol className="space-y-3">
+      <div className="flex min-h-0 flex-1 flex-col justify-center gap-5">
+        <ol className="max-w-2xl space-y-3 text-[clamp(1rem,2.1vh,1.25rem)] text-ink-200">
           <li>
             <span className="text-lime">1.</span> FaceNet already reads the face.
             We don’t train that CNN.
@@ -257,7 +271,7 @@ export const slides: Slide[] = [
         </ol>
         <a
           href="/detect"
-          className="inline-flex rounded-lg bg-lime px-4 py-2 font-display italic text-ink-950"
+          className="inline-flex w-fit rounded-lg bg-lime px-4 py-2 font-display italic text-ink-950"
         >
           Try a photo
         </a>

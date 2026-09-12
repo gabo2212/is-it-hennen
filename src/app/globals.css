@@ -104,6 +104,12 @@
   html {
     @apply font-sans;
   }
+  html:fullscreen,
+  html:fullscreen body {
+    height: 100%;
+    overflow: hidden;
+    background: #070708;
+  }
 }
 
 @utility font-display {
