@@ -20,6 +20,24 @@ _cnn: InceptionResnetV1 | None = None
 _conv_hook = None
 _raw_maps: torch.Tensor | None = None
 _LAST_VIZ: dict = {"face": None, "maps": None}
+_on_stage = None
+_allow_conv_stage = False
+
+
+def set_embed_stage_cb(cb) -> None:
+    """Called during embed (crop / conv / embedding) so the browser can paint live."""
+    global _on_stage
+    _on_stage = cb
+
+
+def _emit_stage(stage: str, **payload) -> None:
+    cb = _on_stage
+    if cb is None:
+        return
+    try:
+        cb(stage, **payload)
+    except Exception:
+        pass
 
 
 def device() -> torch.device:
@@ -62,6 +80,14 @@ def _attach_first_conv(net: InceptionResnetV1) -> None:
     def hook(_m, _i, out):
         global _raw_maps
         _raw_maps = out.detach()
+        face_url = _LAST_VIZ.get("face")
+        if face_url and _allow_conv_stage:
+            _emit_stage(
+                "conv",
+                face=face_url,
+                maps=_pack_maps(out),
+                emb=None,
+            )
 
     for name, mod in net.named_modules():
         if name == "conv2d_1a.conv" and isinstance(mod, nn.Conv2d):
@@ -133,19 +159,30 @@ def consume_facenet_viz() -> dict:
 @torch.inference_mode()
 def embed_image(img: Image.Image, *, tta_flip: bool = True) -> torch.Tensor | None:
     """Return L2-normalized 512-d embedding, or None if no face is found."""
-    global _LAST_VIZ
+    global _LAST_VIZ, _allow_conv_stage
     net = cnn()
+    _allow_conv_stage = True
+    _emit_stage("scan", face=None, maps=None, emb=None)
     face = _as_face_tensor(img.convert("RGB"))
     if face is None:
         _LAST_VIZ = {"face": None, "maps": None}
         return None
     face = face.to(_DEVICE)
+    face_url = _face_data_url(face)
+    _LAST_VIZ = {"face": face_url, "maps": None}
+    _emit_stage("crop", face=face_url, maps=None, emb=None)
     vec = net(face.unsqueeze(0))
-    _LAST_VIZ = {"face": _face_data_url(face), "maps": _pack_maps(_raw_maps)}
+    _allow_conv_stage = False
+    maps = _pack_maps(_raw_maps)
+    _LAST_VIZ = {"face": face_url, "maps": maps}
+    emb = torch.nn.functional.normalize(vec, dim=1).squeeze(0).cpu()
+    _emit_stage("embed", face=face_url, maps=maps, emb=emb)
     if tta_flip:
         flipped = torch.flip(face, dims=[2])
         vec = (vec + net(flipped.unsqueeze(0))) / 2
-    return torch.nn.functional.normalize(vec, dim=1).squeeze(0).cpu()
+        emb = torch.nn.functional.normalize(vec, dim=1).squeeze(0).cpu()
+        _emit_stage("embed", face=face_url, maps=maps, emb=emb)
+    return emb
 
 
 def embed_path(path: Path | str, *, tta_flip: bool = True) -> torch.Tensor | None:

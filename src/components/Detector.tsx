@@ -226,7 +226,7 @@ export function Detector() {
           </div>
         )}
 
-        <NetworkCanvas snapshot={vizSnap} className="w-full" />
+        <NetworkCanvas snapshot={vizSnap} scanning={busy} className="w-full" />
       </main>
     </div>
   );

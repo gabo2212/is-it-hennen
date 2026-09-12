@@ -34,9 +34,11 @@ function isDetectPhase(phase: string | undefined) {
 export function NetworkCanvas({
   className,
   snapshot,
+  scanning = false,
 }: {
   className?: string;
   snapshot?: VizPayload | null;
+  scanning?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const targetRef = useRef<VizPayload>(IDLE_VIZ);
@@ -50,6 +52,7 @@ export function NetworkCanvas({
   const waveStartRef = useRef(0);
   const faceImgRef = useRef<HTMLImageElement | null>(null);
   const faceSrcRef = useRef("");
+  const scanningRef = useRef(false);
   const [hud, setHud] = useState({
     phase: IDLE_VIZ.phase,
     subtitle: IDLE_VIZ.subtitle,
@@ -59,13 +62,28 @@ export function NetworkCanvas({
     live: false,
   });
 
+  useEffect(() => {
+    scanningRef.current = scanning;
+    if (scanning) {
+      liveUntilRef.current = performance.now() + 120000;
+      waveStartRef.current = performance.now();
+      setHud((prev) => ({
+        ...prev,
+        live: true,
+        subtitle: prev.subtitle.includes("%") ? prev.subtitle : "scanning…",
+        phase: "detect · scanning",
+      }));
+    }
+  }, [scanning]);
+
   function apply(data: VizPayload, snapOut: boolean, force = false) {
     if (!force && (data.seq ?? 0) < lastSeqRef.current) return;
     const newer = (data.seq ?? 0) > lastSeqRef.current;
     lastSeqRef.current = Math.max(lastSeqRef.current, data.seq ?? 0);
     targetRef.current = data;
     if (newer) waveStartRef.current = performance.now();
-    if (snapOut && data.output?.length >= 2) {
+    const scanningPhase = (data.phase ?? "").includes("scanning");
+    if (snapOut && !scanningPhase && data.output?.length >= 2) {
       shownRef.current.output[0] = data.output[0];
       shownRef.current.output[1] = data.output[1];
     }
@@ -77,8 +95,12 @@ export function NetworkCanvas({
       };
       im.src = data.face;
     }
-    if (isDetectPhase(data.phase) || (data.phase ?? "idle") !== "idle") {
-      liveUntilRef.current = performance.now() + 5000;
+    if (
+      isDetectPhase(data.phase) ||
+      (data.phase ?? "idle") !== "idle" ||
+      scanningRef.current
+    ) {
+      liveUntilRef.current = performance.now() + (scanningRef.current ? 120000 : 5000);
     }
     const detect = isDetectPhase(data.phase);
     const live = performance.now() < liveUntilRef.current;
@@ -120,13 +142,13 @@ export function NetworkCanvas({
       }
     };
     void pull();
-    const id = window.setInterval(() => void pull(), 80);
+    const id = window.setInterval(() => void pull(), scanning ? 40 : 80);
     return () => {
       cancelled = true;
       window.clearInterval(id);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [scanning]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -139,12 +161,13 @@ export function NetworkCanvas({
       const now = performance.now();
       const target = targetRef.current;
       const shown = shownRef.current;
-      const detect = isDetectPhase(target.phase);
+      const scanningNow = scanningRef.current || (target.phase ?? "").includes("scanning");
+      const detect = isDetectPhase(target.phase) || scanningNow;
       mixArr(shown.input, target.input ?? [], detect ? 0.4 : 0.22);
       mixArr(shown.hidden, target.hidden ?? [], detect ? 0.4 : 0.22);
       mixArr(shown.output, target.output ?? [], detect ? 0.55 : 0.22);
 
-      const live = now < liveUntilRef.current;
+      const live = now < liveUntilRef.current || scanningNow;
       const idle = (target.phase ?? "idle") === "idle" && !live;
       if (idle) {
         const t = now / 900;
@@ -153,7 +176,9 @@ export function NetworkCanvas({
         }
       }
 
-      const wave = ease((now - (waveStartRef.current || now)) / 1200);
+      const wave = scanningNow
+        ? (now / 1500) % 1
+        : ease((now - (waveStartRef.current || now)) / 1200);
 
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const cssW = canvas.clientWidth || 640;
@@ -238,11 +263,11 @@ export function NetworkCanvas({
           <span
             className={cn(
               "inline-block size-1.5 rounded-full",
-              hud.live ? "bg-lime shadow-[0_0_10px_#adfa1e]" : "bg-white/25",
+              hud.live || scanning ? "bg-lime shadow-[0_0_10px_#adfa1e]" : "bg-white/25",
             )}
             aria-hidden
           />
-          {hud.live ? "running" : "idle"}
+          {hud.live || scanning ? "scanning" : "idle"}
           {hud.epoch != null ? ` · ep ${hud.epoch}/${hud.epochs ?? "?"}` : null}
           {hud.loss != null ? ` · loss ${hud.loss.toFixed(3)}` : null}
         </div>

@@ -69,10 +69,88 @@ class HennenDetector:
             logits = self.head(x.unsqueeze(0))
             return float(torch.softmax(logits, dim=1)[0, 1])
 
-    def predict_image(self, img: Image.Image) -> PredictResult:
-        from cnn.faces import embed_image
+    def _push_live(
+        self,
+        *,
+        phase: str,
+        subtitle: str,
+        face,
+        maps,
+        emb: torch.Tensor | None = None,
+        output: np.ndarray | None = None,
+    ) -> None:
+        from cnn.visual import push_active, snapshot_from_head
 
-        emb = embed_image(img, tta_flip=TTA_FLIP)
+        if emb is None:
+            x = torch.zeros(1, EMBED_DIM)
+            snap = snapshot_from_head(
+                self.head,
+                x,
+                phase=phase,
+                subtitle=subtitle,
+                maps=maps,
+                face=face,
+            )
+            snap.input_act = np.zeros(EMBED_DIM, dtype=np.float32)
+            snap.hidden_act = np.zeros(64, dtype=np.float32)
+            snap.output_act = np.array([0.5, 0.5], dtype=np.float32)
+        else:
+            x = ((emb - self.scaler_mean) / self.scaler_std).unsqueeze(0)
+            snap = snapshot_from_head(
+                self.head,
+                x,
+                phase=phase,
+                subtitle=subtitle,
+                maps=maps,
+                face=face,
+            )
+            if output is not None:
+                snap.output_act = np.asarray(output, dtype=np.float32)
+        snap.epoch = None
+        snap.epochs = None
+        snap.loss = None
+        push_active(snap)
+
+    def predict_image(self, img: Image.Image) -> PredictResult:
+        from cnn.faces import embed_image, set_embed_stage_cb
+
+        def on_stage(stage: str, face=None, maps=None, emb=None) -> None:
+            if stage == "scan":
+                self._push_live(
+                    phase="detect · scanning",
+                    subtitle="scanning…",
+                    face=None,
+                    maps=None,
+                )
+            elif stage == "crop":
+                self._push_live(
+                    phase="detect · scanning",
+                    subtitle="face locked · FaceNet…",
+                    face=face,
+                    maps=None,
+                )
+            elif stage == "conv":
+                self._push_live(
+                    phase="detect · scanning",
+                    subtitle="FaceNet conv1 live",
+                    face=face,
+                    maps=maps,
+                )
+            elif stage == "embed" and emb is not None:
+                self._push_live(
+                    phase="detect · scanning",
+                    subtitle="512-d embedding…",
+                    face=face,
+                    maps=maps,
+                    emb=emb,
+                )
+
+        set_embed_stage_cb(on_stage)
+        try:
+            emb = embed_image(img, tta_flip=TTA_FLIP)
+        finally:
+            set_embed_stage_cb(None)
+
         if emb is None:
             return PredictResult(
                 is_hennen=False,
@@ -84,7 +162,6 @@ class HennenDetector:
             )
         cosine = float(torch.nn.functional.cosine_similarity(emb, self.proto, dim=0))
         head_p = self._head_prob(emb)
-        # Same score the detector card uses (not head-softmax alone).
         cosine_p = 1 / (1 + np.exp(-12 * (cosine - self.threshold)))
         p_hennen = float(0.55 * head_p + 0.45 * float(cosine_p))
         is_hennen = p_hennen >= 0.5
@@ -92,24 +169,16 @@ class HennenDetector:
         confidence = p_hennen if is_hennen else 1.0 - p_hennen
         try:
             from cnn.faces import consume_facenet_viz
-            from cnn.visual import last_conv_maps, push_active, snapshot_from_head
 
             bundle = consume_facenet_viz()
-            x = ((emb - self.scaler_mean) / self.scaler_std).unsqueeze(0)
-            snap = snapshot_from_head(
-                self.head,
-                x,
+            self._push_live(
                 phase="detect · forward pass",
                 subtitle=f"{label}  {confidence:.0%}",
-                conv_maps=last_conv_maps(),
-                maps=bundle.get("maps"),
                 face=bundle.get("face"),
+                maps=bundle.get("maps"),
+                emb=emb,
+                output=np.array([1.0 - p_hennen, p_hennen], dtype=np.float32),
             )
-            snap.output_act = np.array([1.0 - p_hennen, p_hennen], dtype=np.float32)
-            snap.epoch = None
-            snap.epochs = None
-            snap.loss = None
-            push_active(snap)
         except Exception:
             pass
         return PredictResult(
