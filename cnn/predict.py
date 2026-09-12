@@ -84,29 +84,34 @@ class HennenDetector:
             )
         cosine = float(torch.nn.functional.cosine_similarity(emb, self.proto, dim=0))
         head_p = self._head_prob(emb)
+        # Same score the detector card uses (not head-softmax alone).
+        cosine_p = 1 / (1 + np.exp(-12 * (cosine - self.threshold)))
+        p_hennen = float(0.55 * head_p + 0.45 * float(cosine_p))
+        is_hennen = p_hennen >= 0.5
+        label = "HENNEN" if is_hennen else "NOT HENNEN"
+        confidence = p_hennen if is_hennen else 1.0 - p_hennen
         try:
             from cnn.visual import last_conv_maps, push_active, snapshot_from_head
 
             x = ((emb - self.scaler_mean) / self.scaler_std).unsqueeze(0)
-            push_active(
-                snapshot_from_head(
-                    self.head,
-                    x,
-                    phase="detect · forward pass",
-                    subtitle="live inference (no training)",
-                    conv_maps=last_conv_maps(),
-                )
+            snap = snapshot_from_head(
+                self.head,
+                x,
+                phase="detect · forward pass",
+                subtitle=f"{label}  {confidence:.0%}",
+                conv_maps=last_conv_maps(),
             )
+            snap.output_act = np.array([1.0 - p_hennen, p_hennen], dtype=np.float32)
+            snap.epoch = None
+            snap.epochs = None
+            snap.loss = None
+            push_active(snap)
         except Exception:
             pass
-        # Blend cosine-to-gallery with the trained head (both saved at train time).
-        cosine_p = 1 / (1 + np.exp(-12 * (cosine - self.threshold)))
-        conf = 0.55 * head_p + 0.45 * float(cosine_p)
-        is_hennen = conf >= 0.5
         return PredictResult(
             is_hennen=is_hennen,
-            label="HENNEN" if is_hennen else "NOT HENNEN",
-            confidence=conf if is_hennen else 1 - conf,
+            label=label,
+            confidence=confidence,
             cosine=cosine,
             face_found=True,
             detail="Matched Hennen gallery" if is_hennen else "Different person",

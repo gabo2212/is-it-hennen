@@ -95,6 +95,8 @@ async def predict(file: UploadFile = File(...)) -> dict:
     except UnidentifiedImageError as exc:
         raise HTTPException(status_code=400, detail="Not a readable image.") from exc
     result = get_detector().predict_image(img)
+    from cnn.visual import read_payload
+
     return {
         "is_hennen": result.is_hennen,
         "label": result.label,
@@ -102,6 +104,7 @@ async def predict(file: UploadFile = File(...)) -> dict:
         "cosine": round(result.cosine, 4),
         "face_found": result.face_found,
         "detail": result.detail,
+        "viz": read_payload(),
     }
 
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CultBackdrop } from "@/components/CultBackdrop";
 import { NetworkCanvas } from "@/components/NetworkCanvas";
 import { cn } from "@/lib/utils";
+import type { VizPayload } from "@/lib/viz";
 
 type Health = {
   ready: boolean;
@@ -25,6 +26,7 @@ type Prediction = {
   cosine: number;
   face_found: boolean;
   detail: string;
+  viz?: VizPayload;
 };
 
 export function Detector() {
@@ -34,6 +36,7 @@ export function Detector() {
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<Prediction | null>(null);
+  const [vizSnap, setVizSnap] = useState<VizPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refreshHealth = useCallback(async () => {
@@ -60,6 +63,7 @@ export function Detector() {
   function onPick(next: File | null) {
     setFile(next);
     setResult(null);
+    setVizSnap(null);
     setError(null);
     if (preview) URL.revokeObjectURL(preview);
     setPreview(next ? URL.createObjectURL(next) : null);
@@ -79,6 +83,7 @@ export function Detector() {
         throw new Error(data.detail || "Predict failed");
       }
       setResult(data as Prediction);
+      if (data.viz) setVizSnap(data.viz as VizPayload);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Predict failed");
     } finally {
@@ -221,7 +226,7 @@ export function Detector() {
           </div>
         )}
 
-        <NetworkCanvas />
+        <NetworkCanvas snapshot={vizSnap} />
       </main>
     </div>
   );

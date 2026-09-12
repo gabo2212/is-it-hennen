@@ -22,7 +22,17 @@ function rgb(c: { r: number; g: number; b: number }, alpha = 1) {
   return `rgba(${c.r},${c.g},${c.b},${alpha})`;
 }
 
-export function NetworkCanvas({ className }: { className?: string }) {
+function isDetectPhase(phase: string | undefined) {
+  return (phase ?? "").includes("detect");
+}
+
+export function NetworkCanvas({
+  className,
+  snapshot,
+}: {
+  className?: string;
+  snapshot?: VizPayload | null;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const targetRef = useRef<VizPayload>(IDLE_VIZ);
   const shownRef = useRef({
@@ -41,6 +51,44 @@ export function NetworkCanvas({ className }: { className?: string }) {
     live: false,
   });
 
+  function apply(data: VizPayload, snapOut: boolean, force = false) {
+    if (!force && (data.seq ?? 0) < lastSeqRef.current) return;
+    lastSeqRef.current = Math.max(lastSeqRef.current, data.seq ?? 0);
+    targetRef.current = data;
+    if (snapOut && data.output?.length >= 2) {
+      shownRef.current.output[0] = data.output[0];
+      shownRef.current.output[1] = data.output[1];
+    }
+    if (isDetectPhase(data.phase) || (data.phase ?? "idle") !== "idle") {
+      liveUntilRef.current = performance.now() + 4000;
+    }
+    const detect = isDetectPhase(data.phase);
+    const live = performance.now() < liveUntilRef.current;
+    const next = {
+      phase: data.phase ?? "idle",
+      subtitle: data.subtitle ?? "",
+      loss: detect ? null : (data.loss ?? null),
+      epoch: detect ? null : (data.epoch ?? null),
+      epochs: detect ? null : (data.epochs ?? null),
+      live,
+    };
+    setHud((prev) =>
+      prev.phase === next.phase &&
+      prev.subtitle === next.subtitle &&
+      prev.loss === next.loss &&
+      prev.epoch === next.epoch &&
+      prev.epochs === next.epochs &&
+      prev.live === next.live
+        ? prev
+        : next,
+    );
+  }
+
+  useEffect(() => {
+    if (snapshot && (snapshot.seq ?? 0) > 0) apply(snapshot, true, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapshot]);
+
   useEffect(() => {
     let cancelled = false;
     const pull = async () => {
@@ -48,33 +96,7 @@ export function NetworkCanvas({ className }: { className?: string }) {
         const res = await fetch("/api/viz", { cache: "no-store" });
         if (!res.ok || cancelled) return;
         const data = (await res.json()) as VizPayload;
-        targetRef.current = data;
-        if (data.seq && data.seq !== lastSeqRef.current) {
-          lastSeqRef.current = data.seq;
-          if ((data.phase ?? "idle") !== "idle") {
-            liveUntilRef.current = performance.now() + 2200;
-          }
-        }
-        if (!cancelled) {
-          const next = {
-            phase: data.phase ?? "idle",
-            subtitle: data.subtitle ?? "",
-            loss: data.loss ?? null,
-            epoch: data.epoch ?? null,
-            epochs: data.epochs ?? null,
-            live: performance.now() < liveUntilRef.current,
-          };
-          setHud((prev) =>
-            prev.phase === next.phase &&
-            prev.subtitle === next.subtitle &&
-            prev.loss === next.loss &&
-            prev.epoch === next.epoch &&
-            prev.epochs === next.epochs &&
-            prev.live === next.live
-              ? prev
-              : next,
-          );
-        }
+        if (!cancelled) apply(data, isDetectPhase(data.phase));
       } catch {
         /* API / file missing — keep last frame */
       }
@@ -85,6 +107,7 @@ export function NetworkCanvas({ className }: { className?: string }) {
       cancelled = true;
       window.clearInterval(id);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -97,9 +120,10 @@ export function NetworkCanvas({ className }: { className?: string }) {
     const draw = () => {
       const target = targetRef.current;
       const shown = shownRef.current;
-      mixArr(shown.input, target.input ?? [], 0.22);
-      mixArr(shown.hidden, target.hidden ?? [], 0.22);
-      mixArr(shown.output, target.output ?? [], 0.22);
+      const detect = isDetectPhase(target.phase);
+      mixArr(shown.input, target.input ?? [], detect ? 0.4 : 0.22);
+      mixArr(shown.hidden, target.hidden ?? [], detect ? 0.4 : 0.22);
+      mixArr(shown.output, target.output ?? [], detect ? 0.55 : 0.22);
 
       const live = performance.now() < liveUntilRef.current;
       const idle = (target.phase ?? "idle") === "idle" && !live;

@@ -112,7 +112,7 @@ def snapshot_to_payload(snap: Snapshot) -> dict:
         return edges
 
     return {
-        "seq": time.time(),
+        "seq": 0,
         "input": np.asarray(snap.input_act, dtype=np.float32).reshape(-1)[:EMBED_DIM].tolist(),
         "hidden": np.asarray(snap.hidden_act, dtype=np.float32).reshape(-1)[:64].tolist(),
         "output": np.asarray(snap.output_act, dtype=np.float32).reshape(-1)[:2].tolist(),
@@ -134,10 +134,10 @@ def persist_snapshot(snap: Snapshot) -> None:
     payload = snapshot_to_payload(snap)
     VIZ_PATH.parent.mkdir(parents=True, exist_ok=True)
     tmp = VIZ_PATH.with_suffix(".json.tmp")
-    text = json.dumps(payload, separators=(",", ":"))
     try:
         with _persist_lock:
-            tmp.write_text(text)
+            payload["seq"] = int(time.time() * 1000)
+            tmp.write_text(json.dumps(payload, separators=(",", ":")))
             tmp.replace(VIZ_PATH)
     except OSError:
         return
