@@ -1,32 +1,38 @@
-# CNN · MemeNet Presentation
+# Same Dude? — CNN Presentation
 
-Interactive slide deck for an ML interview / mini-project: **Convolutional Neural Networks**, plus a concrete pitch for building your own CNN on meme images (**MemeNet** — viral template classifier).
+Short **6-slide** deck for presenting a meme/person CNN mini-project:
 
-## Run locally
+> Train on tons of pics of **one dude** → upload a new pic → model says **SAME DUDE** or **RANDOM DUDE**.
+
+## Run
 
 ```bash
 npm install
 npm run dev -- --port 43123
 ```
 
-Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
+Open [http://127.0.0.1:43123](http://127.0.0.1:43123)
 
-## Controls
+**Controls:** ← → · Space · F fullscreen
 
-- `←` / `→` or buttons — previous / next slide
-- `F` — fullscreen
-- `Home` / `End` — first / last slide
+## Put your real pics in
 
-## What’s inside
+Replace the placeholders in `public/pics/`:
 
-1. CNN concepts for an oral / interview (why CNNs, conv, pool, training, ResNet, Q&A)
-2. Mini-project idea: classify meme **templates** (Drake, Distracted Boyfriend, etc.) — clearer than “is it funny?”
-3. Dataset, architecture sketch, metrics, and deliverables for a short TP
+| File | Use |
+|------|-----|
+| `dude-1.svg` / `dude-2.svg` | Training examples of your person (use `.jpg` / `.png` and update paths in `src/data/slides.tsx`) |
+| `random-1.svg` / `random-2.svg` | “Not him” examples |
+| `query.svg` | The upload / test image |
+| `result-yes.svg` | Optional result mock |
 
-## Stack
+Point `src` on each `PicSlot` in `src/data/slides.tsx` at your files (e.g. `/pics/drake.jpg`).
 
-Next.js, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion
+## Slides (6)
 
-## Note on the source brief
-
-The Word file `TP_Algorithmes_ML_Entrevue_et_Mini_Projet-final.docx` was not available in this environment (local Downloads path). The deck follows a typical “entrevue + mini-projet” structure for ML algorithms. If your TP has required sections or grading criteria, paste them and the slides can be aligned exactly.
+1. Title + picture story  
+2. What’s a CNN (30 sec)  
+3. Project idea: one person, two answers  
+4. Training pics with YES/NO slots  
+5. Upload → verdict demo  
+6. Takeaways + questions  

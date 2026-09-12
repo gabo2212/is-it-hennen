@@ -83,7 +83,7 @@ export function Presentation() {
               slide.tone === "accent" ? "text-ink-950" : "text-lime",
             )}
           >
-            MemeNet · CNN
+            Same Dude? · CNN
           </span>
           <span
             className={cn(
