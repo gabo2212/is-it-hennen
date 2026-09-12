@@ -1,0 +1,6 @@
+{
+  "holdout_hennen": "4/4",
+  "holdout_not_hennen": "23/24",
+  "holdout_hennen_recall": 1.0,
+  "holdout_not_hennen_tnr": 0.9583333333333334
+}

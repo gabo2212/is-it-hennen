@@ -51,6 +51,8 @@ screenshot*.png
 
 # downloaded faces + live viz dumps
 data/not_hennen/kaggle_*
+data/hennen/*
+!data/hennen/README.txt
 models/selftest.pt
 models/viz.json
 models/*.tmp
