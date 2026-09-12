@@ -35,6 +35,20 @@ class HennenHead(nn.Module):
         return logits
 
 
+def decide_hennen(cosine: float, head_p: float, threshold: float) -> tuple[bool, float]:
+    """Gallery cosine is the identity check; the tiny head cannot override a miss.
+
+    The 57% false-positive case was cosine 0.30 (cut ~0.61) with head_p ≈ 1.0.
+    A 0.55/0.45 blend still crossed 0.5. If cosine is below the FaceNet cut,
+    report the cosine probability only.
+    """
+    cosine_p = float(1.0 / (1.0 + np.exp(-12.0 * (cosine - threshold))))
+    blend = 0.55 * head_p + 0.45 * cosine_p
+    is_hennen = cosine >= threshold
+    p_hennen = float(blend) if is_hennen else cosine_p
+    return is_hennen, p_hennen
+
+
 @dataclass
 class PredictResult:
     is_hennen: bool
@@ -162,9 +176,7 @@ class HennenDetector:
             )
         cosine = float(torch.nn.functional.cosine_similarity(emb, self.proto, dim=0))
         head_p = self._head_prob(emb)
-        cosine_p = 1 / (1 + np.exp(-12 * (cosine - self.threshold)))
-        p_hennen = float(0.55 * head_p + 0.45 * float(cosine_p))
-        is_hennen = p_hennen >= 0.5
+        is_hennen, p_hennen = decide_hennen(cosine, head_p, self.threshold)
         label = "HENNEN" if is_hennen else "NOT HENNEN"
         confidence = p_hennen if is_hennen else 1.0 - p_hennen
         try:
