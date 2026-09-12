@@ -7,6 +7,7 @@ Call push() after loss.backward() + optimizer.step() with .detach().numpy().
 
 from __future__ import annotations
 
+import json
 import os
 import threading
 import time
@@ -16,16 +17,16 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from cnn.config import EMBED_DIM, HEAD_EPOCHS, HEAD_LR, NOISE_AUGMENTS
+from cnn.config import EMBED_DIM, HEAD_EPOCHS, HEAD_LR, NOISE_AUGMENTS, VIZ_PATH
 from cnn.predict import HennenHead
 
-BG = (11, 18, 32)
+BG = (7, 7, 8)
 INK = (244, 247, 251)
 MUTED = (110, 130, 158)
-LIME = (200, 245, 66)
-CORAL = (255, 107, 74)
-BLUE = (90, 168, 255)
-PANEL = (18, 26, 43)
+LIME = (173, 250, 30)
+CORAL = (237, 64, 179)
+BLUE = (110, 247, 204)
+PANEL = (18, 20, 24)
 
 TOP_K = 5  # strongest weights drawn per neuron (keeps 60 FPS)
 
@@ -90,6 +91,80 @@ def snapshot_from_head(
     )
 
 
+def snapshot_to_payload(snap: Snapshot) -> dict:
+    """Compact JSON for the browser canvas (top-k weights, not the full tensors)."""
+    w1 = np.asarray(snap.w1, dtype=np.float32)
+    w2 = np.asarray(snap.w2, dtype=np.float32)
+
+    def topk(mat: np.ndarray, k: int | None) -> list[dict]:
+        if mat.size == 0:
+            return []
+        edges: list[dict] = []
+        for j in range(mat.shape[0]):
+            row = mat[j]
+            if k is None:
+                idxs = range(row.size)
+            else:
+                kk = min(k, row.size)
+                idxs = np.argpartition(np.abs(row), -kk)[-kk:]
+            for i in idxs:
+                edges.append({"s": int(i), "d": int(j), "w": float(row[int(i)])})
+        return edges
+
+    return {
+        "seq": time.time(),
+        "input": np.asarray(snap.input_act, dtype=np.float32).reshape(-1)[:EMBED_DIM].tolist(),
+        "hidden": np.asarray(snap.hidden_act, dtype=np.float32).reshape(-1)[:64].tolist(),
+        "output": np.asarray(snap.output_act, dtype=np.float32).reshape(-1)[:2].tolist(),
+        "e1": topk(w1, TOP_K),
+        "e2": topk(w2, None),
+        "loss": snap.loss,
+        "epoch": snap.epoch,
+        "epochs": snap.epochs,
+        "phase": snap.phase,
+        "title": snap.title,
+        "subtitle": snap.subtitle,
+    }
+
+
+_persist_lock = threading.Lock()
+
+
+def persist_snapshot(snap: Snapshot) -> None:
+    payload = snapshot_to_payload(snap)
+    VIZ_PATH.parent.mkdir(parents=True, exist_ok=True)
+    tmp = VIZ_PATH.with_suffix(".json.tmp")
+    text = json.dumps(payload, separators=(",", ":"))
+    try:
+        with _persist_lock:
+            tmp.write_text(text)
+            tmp.replace(VIZ_PATH)
+    except OSError:
+        return
+
+
+def read_payload() -> dict:
+    if VIZ_PATH.exists():
+        try:
+            return json.loads(VIZ_PATH.read_text())
+        except json.JSONDecodeError:
+            pass
+    return {
+        "seq": 0,
+        "input": [0.0] * EMBED_DIM,
+        "hidden": [0.0] * 64,
+        "output": [0.5, 0.5],
+        "e1": [],
+        "e2": [],
+        "loss": None,
+        "epoch": None,
+        "epochs": None,
+        "phase": "idle",
+        "title": "Is it hennen?",
+        "subtitle": "waiting for a forward pass",
+    }
+
+
 class NetworkViz:
     """Pygame window. Safe to push() from a training thread."""
 
@@ -115,9 +190,11 @@ class NetworkViz:
         self.paused = False
         self._fps = 0.0
 
-    def push(self, snap: Snapshot) -> None:
+    def push(self, snap: Snapshot, *, persist: bool = True) -> None:
         with self._lock:
             self._target = snap
+        if persist:
+            persist_snapshot(snap)
 
     def _lerp(self) -> Snapshot:
         with self._lock:
@@ -217,7 +294,7 @@ class NetworkViz:
         self._draw_weights(screen, in_pts, hid_pts, snap.w1, top_k=TOP_K)
         self._draw_weights(screen, hid_pts, out_pts, snap.w2, top_k=None)
 
-        screen.blit(font_sm.render("blue +weight    coral −weight    glow = activation", True, MUTED), (28, self.height - 28))
+        screen.blit(font_sm.render("mint +weight    magenta −weight    glow = activation", True, MUTED), (28, self.height - 28))
 
     def _draw_maps(self, screen, maps: np.ndarray, x: int, y: int, font_sm) -> None:
         import pygame
@@ -470,8 +547,9 @@ def set_active(viz: NetworkViz | None) -> None:
 
 
 def push_active(snap: Snapshot) -> None:
+    persist_snapshot(snap)
     if _ACTIVE is not None:
-        _ACTIVE.push(snap)
+        _ACTIVE.push(snap, persist=False)
 
 
 def last_conv_maps(holder: dict | None = None) -> np.ndarray | None:

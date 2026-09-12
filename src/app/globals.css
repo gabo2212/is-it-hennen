@@ -9,17 +9,18 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-figtree);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-syne);
-  --font-heading: var(--font-syne);
+  --font-display: var(--font-instrument);
+  --font-heading: var(--font-instrument);
   --color-ink-50: #f4f7fb;
   --color-ink-200: #c5d0e0;
   --color-ink-300: #9aabc4;
   --color-ink-400: #6e829e;
   --color-ink-500: #4a5d78;
-  --color-ink-900: #121a2b;
-  --color-ink-950: #0b1220;
-  --color-lime: #c8f542;
-  --color-coral: #ff6b4a;
+  --color-ink-900: #121418;
+  --color-ink-950: #070708;
+  --color-lime: #adfa1e;
+  --color-coral: #ed40b3;
+  --color-mint: #6ef7cc;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -59,38 +60,38 @@
 }
 
 :root {
-  --background: #0b1220;
+  --background: #070708;
   --foreground: #f4f7fb;
-  --card: #121a2b;
+  --card: #121418;
   --card-foreground: #f4f7fb;
-  --popover: #121a2b;
+  --popover: #121418;
   --popover-foreground: #f4f7fb;
-  --primary: #c8f542;
-  --primary-foreground: #0b1220;
-  --secondary: #121a2b;
+  --primary: #adfa1e;
+  --primary-foreground: #070708;
+  --secondary: #121418;
   --secondary-foreground: #f4f7fb;
-  --muted: #121a2b;
+  --muted: #121418;
   --muted-foreground: #9aabc4;
-  --accent: #c8f542;
-  --accent-foreground: #0b1220;
+  --accent: #adfa1e;
+  --accent-foreground: #070708;
   --destructive: oklch(0.577 0.245 27.325);
   --border: rgb(255 255 255 / 12%);
   --input: rgb(255 255 255 / 15%);
-  --ring: #c8f542;
-  --chart-1: #c8f542;
-  --chart-2: #ff6b4a;
-  --chart-3: #9aabc4;
+  --ring: #adfa1e;
+  --chart-1: #adfa1e;
+  --chart-2: #ed40b3;
+  --chart-3: #6ef7cc;
   --chart-4: #4a5d78;
   --chart-5: #f4f7fb;
   --radius: 0.625rem;
-  --sidebar: #121a2b;
+  --sidebar: #121418;
   --sidebar-foreground: #f4f7fb;
-  --sidebar-primary: #c8f542;
-  --sidebar-primary-foreground: #0b1220;
-  --sidebar-accent: #1a2438;
+  --sidebar-primary: #adfa1e;
+  --sidebar-primary-foreground: #070708;
+  --sidebar-accent: #1a1c20;
   --sidebar-accent-foreground: #f4f7fb;
   --sidebar-border: rgb(255 255 255 / 10%);
-  --sidebar-ring: #c8f542;
+  --sidebar-ring: #adfa1e;
 }
 
 @layer base {
@@ -106,5 +107,5 @@
 }
 
 @utility font-display {
-  font-family: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-instrument), ui-serif, Georgia, serif;
 }

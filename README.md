@@ -2,6 +2,8 @@
 
 CNN mini-project: **train once** on ~20–30 photos of Hennen, then the detector only answers **HENNEN / NOT HENNEN**. It does not train when you upload a test photo.
 
+The UI uses a Cult-style dark stage (grain, magenta / lime / mint orbs). The detector draws the live neural net in the browser while the model is running.
+
 ## Run the slides
 
 ```bash
@@ -10,7 +12,7 @@ npm run dev -- --port 43123 --hostname 127.0.0.1
 ```
 
 [http://127.0.0.1:43123](http://127.0.0.1:43123) — presentation  
-[http://127.0.0.1:43123/detect](http://127.0.0.1:43123/detect) — detector (needs the API below)
+[http://127.0.0.1:43123/detect](http://127.0.0.1:43123/detect) — detector + live net (needs the API below)
 
 ## Train the person CNN — once
 
@@ -35,19 +37,14 @@ python3 -m cnn serve
 API: [http://127.0.0.1:43124](http://127.0.0.1:43124)  
 Predict a file: `python3 -m cnn predict path/to/photo.jpg`
 
-## Live neural-net window (Pygame, 60 FPS)
+## Live neural net
 
-Watch activations and weights while the model actually runs:
-
-```bash
-python3 -m cnn viz
-```
+While train or detect is running, activations and weights are written to `models/viz.json`. The detector page polls that snapshot and lerps a canvas at 60 FPS:
 
 - **Neurons** = circles. Size and brightness follow the forward-pass activation.
-- **Weights** = lines. Thickness = `|w|`. Blue = positive, coral = negative.
-- After every `loss.backward()` + `optimizer.step()`, tensors are pulled with `.detach().numpy()` and the canvas redraws.
+- **Weights** = lines. Thickness = `|w|`. Mint = positive, magenta = negative.
 
-Also: `python3 -m cnn train --viz` (one-time lock-in) and `python3 -m cnn serve --viz` (window updates on each detect). Space pauses, Esc quits.
+Desktop Pygame window (optional): `python -m cnn viz` · also `python -m cnn train --viz` and `python -m cnn serve --viz`.
 
 ## How it is “as good as possible” with few pics
 
@@ -56,7 +53,7 @@ Also: `python3 -m cnn train --viz` (one-time lock-in) and `python3 -m cnn serve 
 - **512-d embeddings** + Hennen prototype (average fingerprint)
 - Tiny neural **head trained once** on those embeddings
 - Horizontal-flip **TTA** at detect time
-- Same recipe is checked on a public LFW identity with 25 shots: **91% cosine accuracy**, **100% tiny-head accuracy** on held-out faces (`python3 -m cnn benchmark`)
+- Same recipe is checked on a public LFW identity with 25 shots: **91% cosine accuracy**, **100% tiny-head accuracy** on held-out faces (`python -m cnn benchmark`)
 
 ## Layout
 

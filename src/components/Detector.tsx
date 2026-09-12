@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { CultBackdrop } from "@/components/CultBackdrop";
+import { NetworkCanvas } from "@/components/NetworkCanvas";
 import { cn } from "@/lib/utils";
 
 type Health = {
@@ -87,140 +89,143 @@ export function Detector() {
   const ready = Boolean(health?.ready);
 
   return (
-    <div className="min-h-dvh bg-ink-950 text-ink-50">
-      <header className="flex items-center justify-between gap-4 px-5 py-4 sm:px-8">
+    <div className="relative min-h-dvh text-ink-50">
+      <CultBackdrop />
+      <header className="relative z-10 flex items-center justify-between gap-4 px-5 py-4 sm:px-8">
         <Link
           href="/"
-          className="font-display text-sm font-semibold tracking-[0.18em] uppercase text-lime"
+          className="font-display text-sm italic tracking-wide text-lime"
         >
           ← Slides
         </Link>
-        <span className="font-display text-sm tracking-[0.18em] uppercase text-ink-400">
-          Detector
-        </span>
+        <span className="text-xs uppercase tracking-[0.18em] text-ink-400">Detector</span>
       </header>
 
-      <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-5 pb-16 sm:px-8">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-coral">
-            Inference only
-          </p>
-          <h1 className="mt-2 font-display text-4xl tracking-tight sm:text-5xl">
-            Is it hennen?
-          </h1>
-          <p className="mt-3 max-w-xl text-ink-300">
-            The FaceNet CNN is already trained. This page never trains — it just
-            checks a new photo against the saved Hennen gallery. To watch neurons
-            and weights live (60 FPS Pygame):{" "}
-            <code className="text-lime">python -m cnn viz</code> or{" "}
-            <code className="text-lime">python -m cnn serve --viz</code>.
-          </p>
-        </div>
-
-        {!ready && (
-          <div className="rounded-xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm text-ink-200">
-            {healthError}
-            <p className="mt-2 text-ink-400">
-              Put 20–30 Hennen pics in <code className="text-lime">data/hennen/</code>,
-              run <code className="text-lime">python -m cnn train</code> once, then{" "}
-              <code className="text-lime">python -m cnn serve</code>.
+      <main className="relative z-10 mx-auto grid w-full max-w-6xl gap-8 px-5 pb-16 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+        <div className="flex flex-col gap-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-coral">
+              Inference only
             </p>
-            <Button variant="outline" className="mt-3" onClick={() => void refreshHealth()}>
-              Recheck
-            </Button>
+            <h1 className="mt-2 font-display text-4xl tracking-tight italic sm:text-5xl">
+              Is it hennen?
+            </h1>
+            <p className="mt-3 max-w-xl text-ink-300">
+              The FaceNet CNN is already trained. This page never trains — it
+              just checks a new photo against the saved Hennen gallery. The net
+              on the right redraws from the live forward pass.
+            </p>
           </div>
-        )}
 
-        {ready && health && (
-          <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-            <Stat label="Hennen shots" value={String(health.n_hennen ?? "—")} />
-            <Stat label="Not-Hennen" value={String(health.n_other ?? "—")} />
-            <Stat
-              label="Head acc"
-              value={
-                health.metrics?.head_train_acc != null
-                  ? `${Math.round(health.metrics.head_train_acc * 100)}%`
-                  : "—"
-              }
-            />
-            <Stat label="Backbone" value="FaceNet" />
-          </dl>
-        )}
-
-        <label
-          className={cn(
-            "flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-10 transition",
-            preview
-              ? "border-lime/40 bg-white/5"
-              : "border-white/15 bg-white/[0.03] hover:border-lime/40",
-          )}
-        >
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => onPick(e.target.files?.[0] ?? null)}
-          />
-          {preview ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={preview}
-              alt="Upload preview"
-              className="max-h-80 w-full rounded-lg object-contain"
-            />
-          ) : (
-            <div className="text-center">
-              <p className="font-display text-xl text-lime">Drop a photo</p>
-              <p className="mt-1 text-sm text-ink-400">jpg / png · one face works best</p>
+          {!ready && (
+            <div className="rounded-xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm text-ink-200">
+              {healthError}
+              <p className="mt-2 text-ink-400">
+                Put 20–30 Hennen pics in <code className="text-lime">data/hennen/</code>,
+                run <code className="text-lime">python -m cnn train</code> once, then{" "}
+                <code className="text-lime">python -m cnn serve</code>.
+              </p>
+              <Button variant="outline" className="mt-3" onClick={() => void refreshHealth()}>
+                Recheck
+              </Button>
             </div>
           )}
-        </label>
 
-        <div className="flex flex-wrap gap-3">
-          <Button
-            size="lg"
-            disabled={!ready || !file || busy}
-            onClick={() => void onPredict()}
-            className="bg-lime text-ink-950 hover:bg-lime/90"
+          {ready && health && (
+            <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+              <Stat label="Hennen shots" value={String(health.n_hennen ?? "—")} />
+              <Stat label="Not-Hennen" value={String(health.n_other ?? "—")} />
+              <Stat
+                label="Head acc"
+                value={
+                  health.metrics?.head_train_acc != null
+                    ? `${Math.round(health.metrics.head_train_acc * 100)}%`
+                    : "—"
+                }
+              />
+              <Stat label="Backbone" value="FaceNet" />
+            </dl>
+          )}
+
+          <label
+            className={cn(
+              "flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-10 transition",
+              preview
+                ? "border-lime/40 bg-white/5"
+                : "border-white/15 bg-white/[0.03] hover:border-lime/40",
+            )}
           >
-            {busy ? "Checking…" : "Is it hennen?"}
-          </Button>
-          {file && (
-            <Button variant="outline" size="lg" onClick={() => onPick(null)}>
-              Clear
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+            />
+            {preview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={preview}
+                alt="Upload preview"
+                className="max-h-80 w-full rounded-lg object-contain"
+              />
+            ) : (
+              <div className="text-center">
+                <p className="font-display text-xl italic text-lime">Drop a photo</p>
+                <p className="mt-1 text-sm text-ink-400">jpg / png · one face works best</p>
+              </div>
+            )}
+          </label>
+
+          <div className="flex flex-wrap gap-3">
+            <Button
+              size="lg"
+              disabled={!ready || !file || busy}
+              onClick={() => void onPredict()}
+              className="bg-lime text-ink-950 hover:bg-lime/90"
+            >
+              {busy ? "Checking…" : "Is it hennen?"}
             </Button>
+            {file && (
+              <Button variant="outline" size="lg" onClick={() => onPick(null)}>
+                Clear
+              </Button>
+            )}
+          </div>
+
+          {error && (
+            <p className="rounded-xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm">
+              {error}
+            </p>
+          )}
+
+          {result && (
+            <div
+              className={cn(
+                "rounded-2xl px-6 py-6",
+                result.label === "NO FACE"
+                  ? "bg-white/10"
+                  : result.is_hennen
+                    ? "bg-lime text-ink-950"
+                    : "bg-coral text-ink-50",
+              )}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
+                {result.detail}
+              </p>
+              <p className="font-display text-4xl italic sm:text-5xl">{result.label}</p>
+              {result.face_found && (
+                <p className="mt-2 text-sm opacity-80">
+                  {Math.round(result.confidence * 100)}% confidence · cosine{" "}
+                  {result.cosine.toFixed(3)}
+                </p>
+              )}
+            </div>
           )}
         </div>
 
-        {error && (
-          <p className="rounded-xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm">
-            {error}
-          </p>
-        )}
-
-        {result && (
-          <div
-            className={cn(
-              "rounded-2xl px-6 py-6",
-              result.label === "NO FACE"
-                ? "bg-white/10"
-                : result.is_hennen
-                  ? "bg-lime text-ink-950"
-                  : "bg-coral text-ink-50",
-            )}
-          >
-            <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
-              {result.detail}
-            </p>
-            <p className="font-display text-4xl sm:text-5xl">{result.label}</p>
-            {result.face_found && (
-              <p className="mt-2 text-sm opacity-80">
-                {Math.round(result.confidence * 100)}% confidence · cosine{" "}
-                {result.cosine.toFixed(3)}
-              </p>
-            )}
-          </div>
-        )}
+        <div className="lg:sticky lg:top-4 lg:self-start">
+          <NetworkCanvas />
+        </div>
       </main>
     </div>
   );
@@ -230,7 +235,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-white/5 px-3 py-3 ring-1 ring-white/10">
       <dt className="text-[11px] uppercase tracking-wider text-ink-400">{label}</dt>
-      <dd className="mt-1 font-display text-lg text-ink-50">{value}</dd>
+      <dd className="mt-1 font-display text-lg italic text-ink-50">{value}</dd>
     </div>
   );
 }

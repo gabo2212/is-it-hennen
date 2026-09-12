@@ -22,6 +22,31 @@ app.add_middleware(
 _detector: HennenDetector | None = None
 
 
+def _seed_idle_viz() -> None:
+    from pathlib import Path
+
+    from cnn.config import VIZ_PATH
+
+    if VIZ_PATH.exists():
+        return
+    try:
+        import torch
+
+        from cnn.predict import HennenHead
+        from cnn.visual import persist_snapshot, snapshot_from_head
+
+        persist_snapshot(
+            snapshot_from_head(
+                HennenHead(),
+                torch.zeros(1, 512),
+                phase="idle",
+                subtitle="waiting for a forward pass",
+            )
+        )
+    except Exception:
+        Path(VIZ_PATH).parent.mkdir(parents=True, exist_ok=True)
+
+
 def get_detector() -> HennenDetector:
     global _detector
     if _detector is None:
@@ -32,6 +57,13 @@ def get_detector() -> HennenDetector:
             )
         _detector = HennenDetector()
     return _detector
+
+
+@app.get("/viz")
+def viz() -> dict:
+    from cnn.visual import read_payload
+
+    return read_payload()
 
 
 @app.get("/health")
@@ -48,6 +80,11 @@ def health() -> dict:
             }
         )
     return info
+
+
+@app.on_event("startup")
+def _on_startup() -> None:
+    _seed_idle_viz()
 
 
 @app.post("/predict")

@@ -4,21 +4,16 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { CultBackdrop } from "@/components/CultBackdrop";
 import { slides } from "@/data/slides";
 import { cn } from "@/lib/utils";
-
-const toneClass: Record<NonNullable<(typeof slides)[number]["tone"]>, string> = {
-  hero: "bg-ink-950 text-ink-50",
-  dark: "bg-ink-950 text-ink-50",
-  accent: "bg-lime text-ink-950",
-  demo: "bg-ink-900 text-ink-50",
-};
 
 export function Presentation() {
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const slide = slides[index];
   const progress = ((index + 1) / slides.length) * 100;
+  const accent = slide.tone === "accent";
 
   const go = useCallback(
     (next: number) => {
@@ -52,83 +47,33 @@ export function Presentation() {
     return () => window.removeEventListener("keydown", onKey);
   }, [go, index]);
 
-  const bg =
-    toneClass[slide.tone ?? "dark"] ?? toneClass.dark;
-
   return (
-    <div className={cn("relative flex min-h-dvh flex-col overflow-hidden", bg)}>
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-40"
-        style={{
-          backgroundImage:
-            slide.tone === "accent"
-              ? "radial-gradient(ellipse 80% 60% at 10% 20%, rgba(11,18,32,0.12), transparent), radial-gradient(ellipse 50% 40% at 90% 80%, rgba(255,255,255,0.25), transparent)"
-              : "radial-gradient(ellipse 70% 50% at 15% 10%, rgba(200,245,66,0.14), transparent), radial-gradient(ellipse 60% 45% at 85% 90%, rgba(255,107,74,0.12), transparent)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.07] mix-blend-overlay"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-        }}
-      />
+    <div className="relative flex min-h-dvh flex-col overflow-hidden text-ink-50">
+      <CultBackdrop variant={accent ? "lime" : "default"} />
 
       <header className="relative z-10 flex items-center justify-between gap-4 px-5 py-4 sm:px-10">
         <div className="flex items-center gap-3">
-          <span
-            className={cn(
-              "font-display text-sm font-semibold tracking-[0.18em] uppercase",
-              slide.tone === "accent" ? "text-ink-950" : "text-lime",
-            )}
-          >
+          <span className="font-display text-sm italic tracking-wide text-lime">
             Is it hennen? · CNN
           </span>
-          <span
-            className={cn(
-              "hidden text-sm sm:inline",
-              slide.tone === "accent" ? "text-ink-950/60" : "text-ink-400",
-            )}
-          >
-            {slide.section}
-          </span>
+          <span className="hidden text-sm text-ink-400 sm:inline">{slide.section}</span>
         </div>
         <div className="flex items-center gap-3">
           <Link
             href="/detect"
-            className={cn(
-              "rounded-md px-2.5 py-1 text-xs font-semibold uppercase tracking-wider",
-              slide.tone === "accent"
-                ? "bg-ink-950 text-lime"
-                : "bg-lime text-ink-950",
-            )}
+            className="rounded-md bg-lime px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-ink-950"
           >
             Detector
           </Link>
-          <span
-            className={cn(
-              "font-mono text-xs tabular-nums",
-              slide.tone === "accent" ? "text-ink-950/70" : "text-ink-400",
-            )}
-          >
+          <span className="font-mono text-xs tabular-nums text-ink-400">
             {String(index + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
           </span>
         </div>
       </header>
 
-      <div
-        className={cn(
-          "relative h-0.5 w-full",
-          slide.tone === "accent" ? "bg-ink-950/15" : "bg-white/10",
-        )}
-      >
+      <div className="relative h-px w-full bg-white/10">
         <motion.div
-          className={cn(
-            "h-full",
-            slide.tone === "accent" ? "bg-ink-950" : "bg-lime",
-          )}
+          className="h-full bg-lime"
           initial={false}
           animate={{ width: `${progress}%` }}
           transition={{ type: "spring", stiffness: 120, damping: 20 }}
@@ -150,10 +95,7 @@ export function Presentation() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
-              className={cn(
-                "text-xs font-semibold uppercase tracking-[0.22em]",
-                slide.tone === "accent" ? "text-ink-950/55" : "text-coral",
-              )}
+              className="text-xs font-semibold uppercase tracking-[0.22em] text-coral"
             >
               {slide.section}
             </motion.p>
@@ -162,8 +104,8 @@ export function Presentation() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.4 }}
               className={cn(
-                "mt-3 font-display text-4xl leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl",
-                slide.tone === "accent" ? "text-ink-950" : "text-ink-50",
+                "mt-3 font-display text-4xl leading-[1.05] tracking-tight italic sm:text-5xl lg:text-6xl",
+                accent ? "text-lime" : "text-ink-50",
               )}
             >
               {slide.title}
@@ -173,10 +115,7 @@ export function Presentation() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.18 }}
-                className={cn(
-                  "mt-4 max-w-2xl text-lg sm:text-xl",
-                  slide.tone === "accent" ? "text-ink-950/70" : "text-ink-300",
-                )}
+                className="mt-4 max-w-2xl text-lg text-ink-300 sm:text-xl"
               >
                 {slide.subtitle}
               </motion.p>
@@ -198,12 +137,7 @@ export function Presentation() {
           size="lg"
           onClick={() => go(index - 1)}
           disabled={index === 0}
-          className={cn(
-            "min-w-24",
-            slide.tone === "accent"
-              ? "border-ink-950/20 bg-ink-950/5 text-ink-950 hover:bg-ink-950/10"
-              : "border-white/15 bg-white/5 text-ink-50 hover:bg-white/10",
-          )}
+          className="min-w-24 border-white/15 bg-white/5 text-ink-50 hover:bg-white/10"
         >
           Prev
         </Button>
@@ -216,13 +150,7 @@ export function Presentation() {
               onClick={() => go(i)}
               className={cn(
                 "h-1.5 rounded-full transition-all",
-                i === index
-                  ? slide.tone === "accent"
-                    ? "w-6 bg-ink-950"
-                    : "w-6 bg-lime"
-                  : slide.tone === "accent"
-                    ? "w-1.5 bg-ink-950/25 hover:bg-ink-950/40"
-                    : "w-1.5 bg-white/25 hover:bg-white/40",
+                i === index ? "w-6 bg-lime" : "w-1.5 bg-white/25 hover:bg-white/40",
               )}
             />
           ))}
@@ -231,12 +159,7 @@ export function Presentation() {
           size="lg"
           onClick={() => go(index + 1)}
           disabled={index === slides.length - 1}
-          className={cn(
-            "min-w-24",
-            slide.tone === "accent"
-              ? "bg-ink-950 text-lime hover:bg-ink-950/90"
-              : "bg-lime text-ink-950 hover:bg-lime/90",
-          )}
+          className="min-w-24 bg-lime text-ink-950 hover:bg-lime/90"
         >
           Next
         </Button>

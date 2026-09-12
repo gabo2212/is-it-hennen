@@ -48,3 +48,10 @@ __pycache__/
 # local screenshots
 screenshot*.webp
 screenshot*.png
+
+# downloaded faces + live viz dumps
+data/not_hennen/kaggle_*
+models/selftest.pt
+models/viz.json
+models/*.tmp
+models/*.json.tmp

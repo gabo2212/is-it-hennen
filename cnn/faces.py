@@ -8,6 +8,7 @@ from facenet_pytorch import InceptionResnetV1, MTCNN
 from torchvision import transforms
 
 from cnn.config import IMAGE_SIZE
+from cnn.images import open_rgb
 
 _DEVICE = torch.device("cpu")
 _mtcnn: MTCNN | None = None
@@ -46,7 +47,7 @@ def cnn() -> InceptionResnetV1:
 
 
 def load_rgb(path: Path | str) -> Image.Image:
-    return Image.open(path).convert("RGB")
+    return open_rgb(path)
 
 
 _FALLBACK = transforms.Compose(

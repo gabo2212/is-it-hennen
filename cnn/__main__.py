@@ -18,9 +18,16 @@ def main() -> None:
     rest = argv[1:]
 
     if cmd in {"train", "enroll"}:
+        from pathlib import Path
+
+        hennen_dir = None
+        if "--hennen-dir" in rest:
+            i = rest.index("--hennen-dir")
+            hennen_dir = Path(rest[i + 1])
+            rest = rest[:i] + rest[i + 2 :]
         from cnn.train import train
 
-        train(viz=viz)
+        train(viz=viz, hennen_dir=hennen_dir)
     elif cmd == "serve":
         if viz:
             from cnn.visual import start_background_window
@@ -47,6 +54,10 @@ def main() -> None:
             print("Close the network window to exit.")
             while window.running:
                 time.sleep(0.05)
+    elif cmd == "selftest":
+        from cnn.selftest import run as selftest
+
+        selftest()
     elif cmd == "benchmark":
         from cnn.benchmark import run
 
@@ -62,7 +73,8 @@ def main() -> None:
             run_viz()
     else:
         print("python -m cnn viz                 # 60 FPS live network window")
-        print("python -m cnn train [--viz]       # once, after dropping Hennen photos")
+        print("python -m cnn train [--viz] [--hennen-dir PATH]")
+        print("python -m cnn selftest            # train+predict dry run on public faces")
         print("python -m cnn serve [--viz]       # inference API on :43124")
         print("python -m cnn predict img.jpg [--viz]")
         print("python -m cnn benchmark           # LFW few-shot check")

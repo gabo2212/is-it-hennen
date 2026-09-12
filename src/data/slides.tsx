@@ -89,7 +89,7 @@ export const slides: Slide[] = [
         </div>
         <a
           href="/detect"
-          className="inline-flex rounded-lg bg-lime px-4 py-2 font-display text-ink-950"
+          className="inline-flex rounded-lg bg-lime px-4 py-2 font-display italic text-ink-950"
         >
           Open detector
         </a>
@@ -111,9 +111,9 @@ export const slides: Slide[] = [
           <p className="text-base text-ink-300">
             Same recipe on a public identity (25 photos, held-out test):{" "}
             <span className="text-lime">91% cosine</span>,{" "}
-            <span className="text-lime">100% tiny head</span>. Watch it live:{" "}
-            <span className="text-lime">python -m cnn viz</span> — neurons glow
-            with activations, lines are weights (blue +, coral −).
+            <span className="text-lime">100% tiny head</span>. The detector
+            page draws the live net in the browser — neurons glow with
+            activations, lines are weights (mint +, magenta −).
           </p>
         </div>
         <div className="rounded-xl bg-black/40 p-5 font-mono text-sm leading-relaxed text-lime ring-1 ring-lime/25">
@@ -132,7 +132,7 @@ export const slides: Slide[] = [
     title: "Train once. Never again.",
     tone: "accent",
     content: (
-      <div className="mt-6 max-w-3xl space-y-4 text-lg text-ink-950/85">
+      <div className="mt-6 max-w-3xl space-y-4 text-lg text-ink-200">
         <p>
           Drop ~<strong>20–30 photos of Hennen</strong> in{" "}
           <code>data/hennen/</code>. Run <code>python -m cnn train</code>{" "}
@@ -142,7 +142,7 @@ export const slides: Slide[] = [
           After that, the detector only <strong>loads</strong> the file. New
           uploads are inference — no fitting, no epochs, no “train” button.
         </p>
-        <p className="text-sm text-ink-950/60">
+        <p className="text-sm text-ink-400">
           Need variety: different angles, lighting, memes. Not 30 copies of the
           same screenshot.
         </p>
@@ -203,7 +203,7 @@ export const slides: Slide[] = [
           ["Output", "HENNEN / NOT HENNEN + confidence"],
           ["Train cost", "Once · ~20–30 Hennen photos"],
           ["Detect cost", "Load .pt · one forward pass"],
-          ["Live viz · 60 FPS", "python -m cnn viz  (Pygame neurons + weights)"],
+          ["Live viz", "Browser canvas on /detect · 60 FPS lerp"],
           ["LFW check · 25 shots", "91% cosine · 100% saved head"],
         ].map(([k, v]) => (
           <div key={k} className="rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10">
@@ -237,7 +237,7 @@ export const slides: Slide[] = [
         </ol>
         <a
           href="/detect"
-          className="inline-flex rounded-lg bg-lime px-4 py-2 font-display text-ink-950"
+          className="inline-flex rounded-lg bg-lime px-4 py-2 font-display italic text-ink-950"
         >
           Try a photo
         </a>

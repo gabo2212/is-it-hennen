@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Figtree, Geist_Mono, Syne } from "next/font/google";
+import { Figtree, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 
-const syne = Syne({
-  variable: "--font-syne",
+const instrument = Instrument_Serif({
+  variable: "--font-instrument",
   subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
+  weight: "400",
+  style: ["normal", "italic"],
 });
 
 const figtree = Figtree({
@@ -28,9 +29,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${syne.variable} ${figtree.variable} ${geistMono.variable} h-full dark`}
+      className={`${instrument.variable} ${figtree.variable} ${geistMono.variable} h-full dark`}
     >
-      <body className="min-h-full font-sans antialiased">{children}</body>
+      <body className="min-h-full bg-[#070708] font-sans antialiased">{children}</body>
     </html>
   );
 }

@@ -10,8 +10,7 @@ import torch.nn as nn
 from PIL import Image
 
 from cnn.config import ARTIFACT_PATH, EMBED_DIM, TTA_FLIP
-
-IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+from cnn.images import list_images, open_rgb
 
 
 class HennenHead(nn.Module):
@@ -114,13 +113,7 @@ class HennenDetector:
         )
 
     def predict_path(self, path: Path | str) -> PredictResult:
-        return self.predict_image(Image.open(path).convert("RGB"))
-
-
-def list_images(folder: Path) -> list[Path]:
-    if not folder.exists():
-        return []
-    return sorted(p for p in folder.iterdir() if p.suffix.lower() in IMAGE_EXTS)
+        return self.predict_image(open_rgb(path))
 
 
 def save_artifact(payload: dict, path: Path = ARTIFACT_PATH) -> None:

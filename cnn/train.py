@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+import shutil
 
 import numpy as np
 import torch
@@ -16,14 +17,40 @@ from cnn.config import (
     HEAD_LR,
     HENNEN_DIR,
     MIN_HENNEN_SHOTS,
+    MODELS_DIR,
     NOISE_AUGMENTS,
     NOT_HENNEN_DIR,
     RECOMMENDED_SHOTS,
+    NEGATIVE_TARGET,
 )
 from cnn.faces import embed_path
 from cnn.fetch_negatives import fetch_negative_faces
-from cnn.predict import HennenHead, list_images, save_artifact
+from cnn.predict import HennenHead, save_artifact
+from cnn.images import list_images
 from cnn.visual import push_active, snapshot_from_head
+
+DESKTOP_HENNEN = Path("/home/gablegoob/Desktop/hennen")
+
+
+def ingest_hennen(src: Path | None = None) -> list[Path]:
+    """Copy photos from the Desktop folder (or another dir) into data/hennen."""
+    src = Path(src) if src is not None else DESKTOP_HENNEN
+    src.mkdir(parents=True, exist_ok=True)
+    HENNEN_DIR.mkdir(parents=True, exist_ok=True)
+    copied = 0
+    for path in list_images(src):
+        dest = HENNEN_DIR / path.name
+        try:
+            if dest.resolve() == path.resolve():
+                continue
+        except OSError:
+            pass
+        if not dest.exists():
+            shutil.copy2(path, dest)
+            copied += 1
+    paths = list_images(HENNEN_DIR)
+    print(f"Hennen ingest: {copied} new files from {src} · {len(paths)} total in {HENNEN_DIR}", flush=True)
+    return paths
 
 
 def _stack_embeddings(paths: list[Path], label: str) -> torch.Tensor:
@@ -151,24 +178,42 @@ def _pick_threshold(pos: np.ndarray, neg: np.ndarray) -> tuple[float, dict]:
     return best_t, best_stats
 
 
-def train(*, viz: bool = False) -> Path:
-    HENNEN_DIR.mkdir(parents=True, exist_ok=True)
-    hennen_paths = list_images(HENNEN_DIR)
+def train(*, viz: bool = False, hennen_dir: Path | None = None) -> Path:
+    hennen_paths = ingest_hennen(hennen_dir)
     if len(hennen_paths) < MIN_HENNEN_SHOTS:
         raise SystemExit(
-            f"Need at least {MIN_HENNEN_SHOTS} photos of Hennen in {HENNEN_DIR} "
-            f"(recommended ~{RECOMMENDED_SHOTS}). Found {len(hennen_paths)}."
+            f"Need at least {MIN_HENNEN_SHOTS} photos of Hennen in {hennen_dir or DESKTOP_HENNEN} "
+            f"(recommended ~{RECOMMENDED_SHOTS}). Found {len(hennen_paths)}.\n"
+            f"Put jpg/png/heic files in that folder, then re-run: python -m cnn train"
         )
 
     other_paths = list_images(NOT_HENNEN_DIR)
-    if len(other_paths) < 15:
-        other_paths = fetch_negative_faces()
+    if len(other_paths) < 40:
+        other_paths = fetch_negative_faces(n=max(NEGATIVE_TARGET, 80))
 
-    print(f"Hennen shots: {len(hennen_paths)} · not Hennen: {len(other_paths)}")
+    rng = np.random.default_rng(0)
+    h_order = rng.permutation(len(hennen_paths))
+    n_hold = max(1, min(6, len(hennen_paths) // 5))
+    if len(hennen_paths) - n_hold < MIN_HENNEN_SHOTS:
+        n_hold = 0
+    hold_h = [hennen_paths[i] for i in h_order[:n_hold]]
+    train_h = [hennen_paths[i] for i in h_order[n_hold:]] if n_hold else list(hennen_paths)
+
+    o_order = rng.permutation(len(other_paths))
+    n_o_hold = min(25, max(8, len(other_paths) // 5))
+    hold_o = [other_paths[i] for i in o_order[:n_o_hold]]
+    train_o = [other_paths[i] for i in o_order[n_o_hold:]]
+    if len(train_o) < 15:
+        train_o = list(other_paths)
+        hold_o = list(other_paths[-min(10, len(other_paths)) :])
+
+    print(f"Hennen shots: {len(train_h)} train / {len(hold_h)} hold-out")
+    print(f"Not Hennen:   {len(train_o)} train / {len(hold_o)} hold-out")
     print("Backbone: Inception-ResNet FaceNet (VGGFace2) — already fully trained, frozen.")
+    print("Random people: Kaggle human-faces (LFW fallback).")
 
-    hennen = _stack_embeddings(hennen_paths, "Hennen")
-    other = _stack_embeddings(other_paths, "not-Hennen")
+    hennen = _stack_embeddings(train_h, "Hennen")
+    other = _stack_embeddings(train_o, "not-Hennen")
     proto = F.normalize(hennen.mean(0), dim=0)
 
     pos = _loo_cosine_scores(hennen) if len(hennen) >= 2 else np.array([1.0])
@@ -215,7 +260,30 @@ def train(*, viz: bool = False) -> Path:
     print(f"  head acc      : {head_acc:.3f}")
     print(f"  threshold     : {threshold:.3f}")
     print("Detect time will ONLY load this file — no retraining.")
+    _evaluate_holdout(hold_h, hold_o)
     return ARTIFACT_PATH
+
+
+def _evaluate_holdout(hold_h: list[Path], hold_o: list[Path]) -> dict:
+    from cnn.predict import HennenDetector
+
+    det = HennenDetector()
+    tp = sum(int(det.predict_path(p).is_hennen) for p in hold_h) if hold_h else 0
+    tn = sum(int(not det.predict_path(p).is_hennen) for p in hold_o) if hold_o else 0
+    report = {
+        "holdout_hennen": f"{tp}/{len(hold_h)}" if hold_h else "n/a",
+        "holdout_not_hennen": f"{tn}/{len(hold_o)}" if hold_o else "n/a",
+        "holdout_hennen_recall": (tp / len(hold_h)) if hold_h else None,
+        "holdout_not_hennen_tnr": (tn / len(hold_o)) if hold_o else None,
+    }
+    print("\nHold-out check (photos the model did not train on):")
+    print(f"  Hennen recall     : {report['holdout_hennen']}")
+    print(f"  Not-Hennen reject : {report['holdout_not_hennen']}")
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    import json
+
+    (MODELS_DIR / "eval.json").write_text(json.dumps(report, indent=2))
+    return report
 
 
 if __name__ == "__main__":
