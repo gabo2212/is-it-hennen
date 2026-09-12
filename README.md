@@ -1,63 +1,179 @@
 # Is it hennen?
 
-CNN mini-project: **train once** on ~20–30 photos of Hennen, then the detector only answers **HENNEN / NOT HENNEN**. It does not train when you upload a test photo.
+School mini-project: a **tiny CNN head** on a frozen FaceNet backbone that answers **HENNEN / NOT HENNEN**.
 
-The UI uses a Cult-style dark stage (grain, magenta / lime / mint orbs). The detector draws the live neural net in the browser while the model is running.
+The network trains **once**. Detection never retrains.
 
-## Run the slides
+## What you get
+
+- `/` — 6-slide deck (CNN, FaceNet, training, live scan)
+- `/detect` — drop a photo, live scan through MTCNN → conv1 → 512-d → 64 hidden → HENNEN / NOT HENNEN
+- `models/hennen.pt` — the trained artifact (~176 KB). This is what you copy if you want someone else to run *your* person.
+
+Personal training photos stay **out of git** (`data/hennen/` except a README). The committed `hennen.pt` is the gallery + tiny head, not the pictures.
+
+---
+
+## Run the app
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r cnn/requirements.txt
 npm install
+```
+
+Two processes:
+
+```bash
+# terminal 1 — detector API (loads models/hennen.pt)
+PYTHONPATH=. python3 -m cnn serve
+```
+
+```bash
+# terminal 2 — Next.js UI
 npm run dev -- --port 43123 --hostname 127.0.0.1
 ```
 
-[http://127.0.0.1:43123](http://127.0.0.1:43123) — presentation  
-[http://127.0.0.1:43123/detect](http://127.0.0.1:43123/detect) — detector + live net (needs the API below)
+Open [http://127.0.0.1:43123](http://127.0.0.1:43123). Detect talks to FastAPI on **43124**.
 
-## Train the person CNN — once
-
-1. Put **20–30 photos of Hennen** (jpg/png, face visible) in `data/hennen/`
-2. Install Python deps: `python3 -m pip install -r cnn/requirements.txt`
-3. Lock him in:
+CLI check:
 
 ```bash
-python3 -m cnn train
+PYTHONPATH=. python3 -m cnn predict path/to/photo.jpg
 ```
 
-That writes `models/hennen.pt` (gallery + tiny classifier). Public “not Hennen” faces are downloaded automatically into `data/not_hennen/` if that folder is empty.
+---
 
-**Do not retrain for every photo.** After `hennen.pt` exists, detection is a forward pass only.
+## Train your own person (once)
 
-## Start the detector API
+You are swapping who “Hennen” is. Same pipeline.
+
+### 1. Collect photos
+
+Need **at least 8** clear face shots of **one person**. **20–30** is better.
+
+- Front / 3/4, different rooms and light
+- One face per photo
+- `.jpg` `.jpeg` `.png` `.webp` `.heic`
+
+Put them here:
+
+```text
+data/hennen/
+  photo1.jpg
+  photo2.jpg
+  …
+```
+
+Or keep them anywhere and pass `--hennen-dir`.
+
+Git ignores `data/hennen/*` so you do not commit private photos.
+
+### 2. Train (once)
 
 ```bash
-python3 -m cnn serve
+PYTHONPATH=. python3 -m cnn train
 ```
 
-API: [http://127.0.0.1:43124](http://127.0.0.1:43124)  
-Predict a file: `python3 -m cnn predict path/to/photo.jpg`
+Custom folder:
 
-## Live neural net
+```bash
+PYTHONPATH=. python3 -m cnn train --hennen-dir /path/to/photos
+```
 
-While train or detect is running, activations and weights are written to `models/viz.json`. The detector page polls that snapshot and lerps a canvas at 60 FPS:
+This:
 
-- **Neurons** = circles. Size and brightness follow the forward-pass activation.
-- **Weights** = lines. Thickness = `|w|`. Mint = positive, magenta = negative.
+1. Crops faces (MTCNN)
+2. Embeds with frozen FaceNet (VGGFace2)
+3. Fits a tiny 2-layer head on those 512-d vectors
+4. Writes **`models/hennen.pt`**
 
-Desktop Pygame window (optional): `python -m cnn viz` · also `python -m cnn train --viz` and `python -m cnn serve --viz`.
+First FaceNet download is ~100 MB into `~/.cache`. Later runs are local.
 
-## How it is “as good as possible” with few pics
+Hold-out photos of that person should print `HENNEN`. Random other faces should print `NOT HENNEN`. If they do not, add more varied photos and train **once more**. Then stop.
 
-- **FaceNet** (Inception-ResNet) already trained on **VGGFace2** (~3.3 million faces) — frozen
-- **MTCNN** crops/aligns the face so memes and messy photos still work
-- **512-d embeddings** + Hennen prototype (average fingerprint)
-- Tiny neural **head trained once** on those embeddings
-- Horizontal-flip **TTA** at detect time
-- Same recipe is checked on a public LFW identity with 25 shots: **91% cosine accuracy**, **100% tiny-head accuracy** on held-out faces (`python -m cnn benchmark`)
+### 3. Restart the API
+
+`cnn serve` loads the `.pt` at start. After a new train:
+
+```bash
+# stop the old python -m cnn serve, then:
+PYTHONPATH=. python3 -m cnn serve
+```
+
+Refresh `/detect` and drop photos. Detect **does not** train.
+
+---
+
+## Upload / move your model
+
+`models/hennen.pt` is the whole custom model: gallery embeddings, tiny head weights, and the HENNEN / NOT HENNEN thresholds.
+
+**You do not need the training photos on the machine that only detects.**
+
+### Same laptop, new clone
+
+```bash
+git clone <this-repo>
+cd is-it-hennen
+# if hennen.pt is already in the repo, skip copy
+```
+
+### Another computer / classmate / USB
+
+1. Train on machine A (steps above).
+2. Copy the file:
+
+```bash
+# from the project that trained
+cp models/hennen.pt /somewhere/safe/hennen.pt
+```
+
+3. On machine B:
+
+```bash
+git clone <this-repo>
+cd is-it-hennen
+mkdir -p models
+cp /somewhere/safe/hennen.pt models/hennen.pt
+pip install -r cnn/requirements.txt
+npm install
+PYTHONPATH=. python3 -m cnn serve
+npm run dev -- --port 43123 --hostname 127.0.0.1
+```
+
+Drop photos on `/detect`. It is still **your** person, without sharing the original album.
+
+### Put it in git (optional)
+
+If the person is OK with a public gallery embedding (not the raw photos):
+
+```bash
+git add models/hennen.pt
+git commit -m "Train custom person into hennen.pt"
+git push
+```
+
+Do **not** `git add data/hennen/`. That folder is gitignored on purpose.
+
+### Replace the person later
+
+1. Delete or overwrite `models/hennen.pt`
+2. Replace photos in `data/hennen/`
+3. `python3 -m cnn train` **once**
+4. Restart `cnn serve`
+
+---
 
 ## Layout
 
-- `src/` — 6-slide deck + `/detect` UI
-- `cnn/` — train / serve / predict
-- `data/hennen/` — your photos (required for training)
-- `models/hennen.pt` — saved model after the one-time train
+```text
+cnn/            train / predict / FastAPI / live viz JSON
+models/hennen.pt
+src/app/        Next.js pages
+src/components/ Detector, live NetworkCanvas
+data/hennen/    your photos — gitignored
+```
+
+The live canvas is **visualization**, not a second trainer.
