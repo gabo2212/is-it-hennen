@@ -106,7 +106,7 @@ export function Detector() {
         <span className="text-xs uppercase tracking-[0.18em] text-ink-400">Detector</span>
       </header>
 
-      <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-8 px-5 pb-16 sm:px-8">
+      <main className="relative z-10 mx-auto flex w-full max-w-none flex-col gap-6 px-4 pb-8 sm:px-6 lg:px-8">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-coral">
             Inference only
@@ -226,7 +226,7 @@ export function Detector() {
           </div>
         )}
 
-        <NetworkCanvas snapshot={vizSnap} />
+        <NetworkCanvas snapshot={vizSnap} className="w-full" />
       </main>
     </div>
   );

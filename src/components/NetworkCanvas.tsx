@@ -165,26 +165,29 @@ export function NetworkCanvas({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, cssW, cssH);
 
-      const pad = 16;
-      const top = 30;
-      const bottom = cssH - 24;
-      const labelReserve = 128;
-      const faceW = 84;
-      const convW = Math.min(152, cssW * 0.22);
-      const embedW = 70;
-      const outX = Math.max(pad + 280, cssW - pad - labelReserve);
-      const hidX = pad + faceW + 10 + convW + 12 + embedW + 28;
-      const hidXClamped = Math.min(hidX, outX - 70);
-      const faceX = pad;
-      const convX = faceX + faceW + 10;
-      const embedX = convX + convW + 12;
+      const padX = Math.max(20, cssW * 0.018);
+      const top = 36;
+      const bottom = cssH - 22;
+      const stageH = bottom - top;
+      const innerW = cssW - padX * 2;
+      const gutter = Math.max(18, innerW * 0.02);
+      const colW = (innerW - gutter * 4) / 5;
+      const colX = (i: number) => padX + i * (colW + gutter);
 
-      drawScan(ctx, pad, top, cssW - pad * 2, bottom - top, wave, live || detect);
+      const faceX = colX(0);
+      const faceSize = Math.min(colW, stageH * 0.5, 220);
+      const convX = colX(1);
+      const embedW = Math.min(colW * 0.82, 120);
+      const embedX = colX(2) + (colW - embedW) / 2;
+      const hidX = colX(3) + colW * 0.42;
+      const outX = colX(4) + Math.min(36, colW * 0.18);
 
-      drawFace(ctx, faceImgRef.current, faceX, top, faceW, 84, wave, now);
-      drawConvMaps(ctx, target.maps, convX, top, convW, bottom - top - 8, wave, now);
-      const inPts = drawEmbedding(ctx, shown.input, embedX, top, embedW, bottom - top, wave, now);
-      const hidPts = drawHidden(ctx, shown.hidden, hidXClamped, top, bottom, wave, now);
+      drawScan(ctx, padX, top, innerW, stageH, wave, live || detect);
+
+      drawFace(ctx, faceImgRef.current, faceX, top, faceSize, faceSize, wave, now);
+      drawConvMaps(ctx, target.maps, convX, top, colW, stageH, wave, now);
+      const inPts = drawEmbedding(ctx, shown.input, embedX, top, embedW, stageH, wave, now);
+      const hidPts = drawHidden(ctx, shown.hidden, hidX, top, bottom, wave, now);
       const outPts = drawOutputs(ctx, shown.output, outX, cssH, wave, now);
 
       ctx.globalAlpha = 0.35 + 0.65 * clamp((wave - 0.35) / 0.4, 0, 1);
@@ -196,11 +199,11 @@ export function NetworkCanvas({
 
       ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
       ctx.fillStyle = "rgba(173,250,30,0.85)";
-      ctx.fillText("MTCNN crop", faceX, top - 10);
-      ctx.fillText("FaceNet conv1", convX, top - 10);
-      ctx.fillText("512-d", embedX, top - 10);
-      ctx.fillText("hidden 64", hidXClamped - 28, top - 10);
-      ctx.fillText("out", outX - 8, top - 10);
+      ctx.fillText("MTCNN crop", faceX, top - 12);
+      ctx.fillText("FaceNet conv1", convX, top - 12);
+      ctx.fillText("512-d", embedX, top - 12);
+      ctx.fillText("hidden 64", hidX - 32, top - 12);
+      ctx.fillText("out", outX - 8, top - 12);
 
       raf = window.requestAnimationFrame(draw);
     };
@@ -212,7 +215,7 @@ export function NetworkCanvas({
   return (
     <section
       className={cn(
-        "relative flex min-h-[32rem] flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
+        "relative flex min-h-[72dvh] w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
         className,
       )}
     >
@@ -238,7 +241,7 @@ export function NetworkCanvas({
       </div>
       <canvas
         ref={canvasRef}
-        className="h-[min(62vh,40rem)] min-h-[28rem] w-full flex-1"
+        className="h-[72dvh] min-h-[28rem] w-full flex-1"
         role="img"
         aria-label="Live FaceNet: aligned face, conv maps, 512-d embedding, 64-neuron head, two outputs"
       />
