@@ -15,12 +15,14 @@ function PicSlot({
   src,
   badge,
   badgeTone = "yes",
+  wide = false,
 }: {
   label: string;
   hint?: string;
   src?: string;
   badge?: string;
   badgeTone?: "yes" | "no" | "train";
+  wide?: boolean;
 }) {
   const badgeClass =
     badgeTone === "yes"
@@ -31,10 +33,10 @@ function PicSlot({
 
   return (
     <figure className="relative flex flex-col overflow-hidden rounded-xl ring-1 ring-white/15">
-      <div className="relative aspect-[4/3] bg-ink-900">
+      <div className={`relative bg-ink-900 ${wide ? "aspect-[5/4] sm:aspect-[16/10]" : "aspect-[4/3]"}`}>
         {src ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt={label} className="h-full w-full object-cover" />
+          <img src={src} alt={label} className="h-full w-full object-cover object-top" />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 border-2 border-dashed border-lime/35 px-3 text-center">
             <span className="font-display text-sm text-lime">Add pic</span>
@@ -63,29 +65,36 @@ export const slides: Slide[] = [
     id: "title",
     section: "Mini-projet",
     title: "Is it hennen?",
-    subtitle: "A face CNN. Trained once. Then it only answers the question.",
+    subtitle:
+      "22 real photos. FaceNet frozen. Tiny head trained once. Then it only answers HENNEN / NOT HENNEN.",
     tone: "hero",
     content: (
       <div className="mt-8 space-y-6">
-        <div className="grid max-w-4xl gap-4 sm:grid-cols-3">
+        <div className="grid max-w-5xl gap-4 sm:grid-cols-3">
           <PicSlot
-            label="20–30 Hennen pics"
-            src="/pics/dude-1.svg"
-            badge="once"
+            label="Dashcam, memes, metro…"
+            src="/slides/hennen-dashcam.jpg"
+            badge="22 pics"
             badgeTone="train"
           />
           <PicSlot
-            label="Saved model"
-            src="/pics/result-yes.svg"
-            badge="hennen.pt"
+            label="Rally mic"
+            src="/slides/hennen-mic.jpg"
+            badge="YES"
             badgeTone="yes"
           />
           <PicSlot
-            label="New photo → verdict"
-            src="/pics/query.svg"
-            badge="no train"
-            badgeTone="train"
+            label="Pool selfie"
+            src="/slides/hennen-pool.jpg"
+            badge="YES"
+            badgeTone="yes"
           />
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs uppercase tracking-wider text-ink-400">
+          <span className="rounded-md bg-white/10 px-2 py-1 text-lime">hennen.pt · 176 KB</span>
+          <span className="rounded-md bg-white/10 px-2 py-1">18 train / 4 hold-out</span>
+          <span className="rounded-md bg-white/10 px-2 py-1">cosine cut 0.61</span>
+          <span className="rounded-md bg-white/10 px-2 py-1">detect never trains</span>
         </div>
         <a
           href="/detect"
@@ -101,26 +110,28 @@ export const slides: Slide[] = [
     section: "The CNN",
     title: "FaceNet, already trained",
     content: (
-      <div className="mt-6 grid max-w-4xl gap-8 lg:grid-cols-2">
+      <div className="mt-6 grid max-w-5xl gap-8 lg:grid-cols-2">
         <div className="space-y-4 text-lg text-ink-200">
           <p>
-            We use <span className="text-lime">Inception-ResNet FaceNet</span>{" "}
-            pretrained on <span className="text-lime">VGGFace2</span> (~3.3M
-            face photos). Those millions of weights stay frozen.
+            Backbone is <span className="text-lime">Inception-ResNet FaceNet</span>{" "}
+            on <span className="text-lime">VGGFace2</span> (~3.3M faces). Those
+            weights stay frozen. We only fit a tiny 512→64→2 head on Hennen’s
+            fingerprints.
           </p>
           <p className="text-base text-ink-300">
-            Same recipe on a public identity (25 photos, held-out test):{" "}
-            <span className="text-lime">91% cosine</span>,{" "}
-            <span className="text-lime">100% tiny head</span>. The detector
-            page draws the live net in the browser — neurons glow with
-            activations, lines are weights (mint +, magenta −).
+            MTCNN crops messy shots (car screen, crowd, subway). Identity is
+            the FaceNet cosine vs the saved gallery — cut{" "}
+            <span className="text-lime">0.61</span>. The head cannot override a
+            miss (that 57% false Hennen).
           </p>
         </div>
         <div className="rounded-xl bg-black/40 p-5 font-mono text-sm leading-relaxed text-lime ring-1 ring-lime/25">
           {`photo
-  → MTCNN (crop face)
-  → FaceNet CNN (512-d)
-  → saved Hennen gallery
+  → MTCNN crop / align
+  → FaceNet conv1 (live maps)
+  → 512-d embedding
+  → cosine vs Hennen proto
+  → tiny head 64 → 2
   → HENNEN / NOT HENNEN`}
         </div>
       </div>
@@ -134,17 +145,21 @@ export const slides: Slide[] = [
     content: (
       <div className="mt-6 max-w-3xl space-y-4 text-lg text-ink-200">
         <p>
-          Drop ~<strong>20–30 photos of Hennen</strong> in{" "}
-          <code>data/hennen/</code>. Run <code>python -m cnn train</code>{" "}
-          <strong>once</strong>. That writes <code>models/hennen.pt</code>.
+          We put <strong>22 photos of Hennen</strong> in{" "}
+          <code className="text-lime">data/hennen/</code> and ran{" "}
+          <code className="text-lime">python -m cnn train</code>{" "}
+          <strong>once</strong>. That wrote <code className="text-lime">models/hennen.pt</code>{" "}
+          (176 KB).
         </p>
+        <ul className="space-y-1 text-base text-ink-300">
+          <li>18 train / 4 hold-out</li>
+          <li>Hold-out Hennen: <span className="text-lime">4/4</span></li>
+          <li>Gallery cosine F1 ≈ 0.94 · tiny-head train acc 100%</li>
+          <li>94 public “not him” faces for the head</li>
+        </ul>
         <p>
-          After that, the detector only <strong>loads</strong> the file. New
-          uploads are inference — no fitting, no epochs, no “train” button.
-        </p>
-        <p className="text-sm text-ink-400">
-          Need variety: different angles, lighting, memes. Not 30 copies of the
-          same screenshot.
+          After that, <code>python -m cnn serve</code> only <strong>loads</strong>{" "}
+          the file. Dropping a photo on /detect is a forward pass — no fitting.
         </p>
       </div>
     ),
@@ -155,37 +170,41 @@ export const slides: Slide[] = [
     title: "Gallery + tiny head",
     content: (
       <div className="mt-6 space-y-6">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <PicSlot
-            label="Hennen"
-            src="/pics/dude-1.svg"
-            badge="YES"
-            badgeTone="yes"
-          />
-          <PicSlot
-            label="Hennen"
-            src="/pics/dude-2.svg"
-            badge="YES"
-            badgeTone="yes"
-          />
-          <PicSlot
-            label="Random"
-            src="/pics/random-1.svg"
-            badge="NO"
-            badgeTone="no"
-          />
-          <PicSlot
-            label="Random"
-            src="/pics/random-2.svg"
-            badge="NO"
-            badgeTone="no"
-          />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <PicSlot label="Hennen" src="/slides/hennen-close.jpg" badge="YES" badgeTone="yes" />
+          <PicSlot label="Hennen" src="/slides/hennen-hoodie.jpg" badge="YES" badgeTone="yes" />
+          <PicSlot label="Hennen" src="/slides/hennen-metro.jpg" badge="YES" badgeTone="yes" />
+          <PicSlot label="Hennen" src="/slides/hennen-mic.jpg" badge="YES" badgeTone="yes" />
+          <PicSlot label="Random" src="/slides/not-longhair.jpg" badge="NO" badgeTone="no" />
+          <PicSlot label="Random" src="/slides/not-bw.jpg" badge="NO" badgeTone="no" />
         </div>
-        <p className="max-w-2xl text-ink-300">
-          Each face becomes a 512-number fingerprint. We save Hennen’s average
-          fingerprint plus a small classifier trained on those fingerprints
-          (and public “not him” faces). Flip-test at detect time for a bit more
-          accuracy.
+        <p className="max-w-3xl text-ink-300">
+          Each face is a 512-number fingerprint. We save Hennen’s average
+          vector plus the tiny classifier. At detect time we flip-test the
+          crop. If cosine is under 0.61, it is <span className="text-coral">NOT HENNEN</span> —
+          even if the head is loud.
+        </p>
+      </div>
+    ),
+  },
+  {
+    id: "live",
+    section: "Detector",
+    title: "Live net on /detect",
+    tone: "demo",
+    content: (
+      <div className="mt-6 space-y-4">
+        <PicSlot
+          wide
+          label="Same photo: MTCNN crop → conv1 → 512-d → 64 hidden → HENNEN 89%"
+          src="/slides/detect-live.jpg"
+          badge="inference"
+          badgeTone="train"
+        />
+        <p className="max-w-3xl text-sm text-ink-400">
+          Stats on that page are the trained artifact: 18 Hennen shots, 94
+          others, 100% head acc, FaceNet backbone. The canvas is visualization
+          — it does not train.
         </p>
       </div>
     ),
@@ -194,17 +213,17 @@ export const slides: Slide[] = [
     id: "card",
     section: "Model card",
     title: "What’s in the box",
-    tone: "demo",
     content: (
       <div className="mt-6 grid max-w-4xl gap-4 sm:grid-cols-2">
         {[
-          ["Backbone", "Inception-ResNet FaceNet · VGGFace2"],
-          ["Input", "Aligned face 160×160"],
-          ["Output", "HENNEN / NOT HENNEN + confidence"],
-          ["Train cost", "Once · ~20–30 Hennen photos"],
-          ["Detect cost", "Load .pt · one forward pass"],
-          ["Live viz", "Browser canvas on /detect · 60 FPS lerp"],
-          ["LFW check · 25 shots", "91% cosine · 100% saved head"],
+          ["Backbone", "FaceNet Inception-ResNet · VGGFace2 · frozen"],
+          ["Input", "MTCNN-aligned face 160×160"],
+          ["Tiny head", "Linear 512 → 64 → 2"],
+          ["Artifact", "models/hennen.pt · 176 KB"],
+          ["Train set", "22 Hennen pics · 18 / 4 split"],
+          ["Hold-out", "Hennen 4/4 · cosine F1 0.94"],
+          ["Identity cut", "cosine ≥ 0.61 vs gallery proto"],
+          ["Detect", "Load .pt · one forward pass · /detect"],
         ].map(([k, v]) => (
           <div key={k} className="rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10">
             <p className="text-xs uppercase tracking-wider text-ink-400">{k}</p>
@@ -223,16 +242,17 @@ export const slides: Slide[] = [
       <div className="mt-8 max-w-2xl space-y-5 text-lg text-ink-200">
         <ol className="space-y-3">
           <li>
-            <span className="text-lime">1.</span> CNN reads the face (FaceNet,
-            already trained)
+            <span className="text-lime">1.</span> FaceNet already reads the face.
+            We don’t train that CNN.
           </li>
           <li>
-            <span className="text-lime">2.</span> We lock Hennen in once from
-            20–30 pics
+            <span className="text-lime">2.</span> We locked Hennen in once from
+            22 messy pics → <span className="text-lime">hennen.pt</span>
           </li>
           <li>
             <span className="text-lime">3.</span> After that it’s only{" "}
-            <span className="text-lime">Is it hennen?</span>
+            <span className="text-lime">Is it hennen?</span> — cosine vs the
+            gallery, live net on the side.
           </li>
         </ol>
         <a

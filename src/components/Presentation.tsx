@@ -89,7 +89,7 @@ export function Presentation() {
             animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
             exit={{ opacity: 0, x: direction >= 0 ? -36 : 36, filter: "blur(4px)" }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="mx-auto w-full max-w-5xl"
+            className="mx-auto w-full max-w-6xl"
           >
             <motion.p
               initial={{ opacity: 0, y: 8 }}
