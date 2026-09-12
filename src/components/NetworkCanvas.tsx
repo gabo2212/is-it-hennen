@@ -120,14 +120,15 @@ export function NetworkCanvas({ className }: { className?: string }) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, cssW, cssH);
 
-      const pad = 18;
-      const top = 28;
-      const bottom = cssH - 22;
+      const pad = 24;
+      const top = 32;
+      const bottom = cssH - 28;
+      const labelReserve = 136;
       const gridX = pad;
-      const gridW = cssW * 0.34;
+      const outX = Math.max(pad + 160, cssW - pad - labelReserve);
+      const hidX = pad + (outX - pad) * 0.58;
+      const gridW = Math.max(72, hidX - pad - 40);
       const gridH = bottom - top;
-      const hidX = cssW * 0.56;
-      const outX = cssW * 0.88;
 
       const inPts = drawInput(ctx, shown.input, gridX, top, gridW, gridH);
       const hidPts = drawHidden(ctx, shown.hidden, hidX, top, bottom);
@@ -152,7 +153,7 @@ export function NetworkCanvas({ className }: { className?: string }) {
   return (
     <section
       className={cn(
-        "relative flex min-h-[22rem] flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
+        "relative flex min-h-[32rem] flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
         className,
       )}
     >
@@ -178,7 +179,7 @@ export function NetworkCanvas({ className }: { className?: string }) {
       </div>
       <canvas
         ref={canvasRef}
-        className="h-[min(52vh,28rem)] w-full flex-1"
+        className="h-[min(62vh,40rem)] min-h-[28rem] w-full flex-1"
         role="img"
         aria-label="Live neural network: FaceNet embeddings into a 64-neuron head and two outputs"
       />
