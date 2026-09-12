@@ -36,7 +36,7 @@ function PicSlot({
       <div className={`relative bg-ink-900 ${wide ? "aspect-[5/4] sm:aspect-[16/10]" : "aspect-[4/3]"}`}>
         {src ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt={label} className="h-full w-full object-cover object-top" />
+          <img src={src} alt={label} className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 border-2 border-dashed border-lime/35 px-3 text-center">
             <span className="font-display text-sm text-lime">Add pic</span>
