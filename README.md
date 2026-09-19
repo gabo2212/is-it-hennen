@@ -2,11 +2,34 @@
 
 School mini-project: a **tiny CNN head** on a frozen FaceNet backbone that answers **HENNEN / NOT HENNEN**.
 
-The network trains **once**. Detection never retrains.
+The network trains **once**. Detection never retrains. The trained file `models/hennen.pt` (~176 KB) is **already in this repo**, so a clone on another PC is enough.
+
+## On another computer
+
+```bash
+git clone https://github.com/gabo2212/is-it-hennen.git
+cd is-it-hennen
+npm install
+npm run dev -- --port 43123 --hostname 127.0.0.1
+```
+
+Open [http://127.0.0.1:43123](http://127.0.0.1:43123). Press **F** for fullscreen, arrows / space to present.
+
+To use the detector too, in a **second** terminal (first run downloads FaceNet, ~100 MB, once):
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r cnn/requirements.txt
+PYTHONPATH=. python3 -m cnn serve
+```
+
+Then open `/detect` and drop a photo. You do **not** need the original Hennen album.
 
 ## What you get
 
-- `/` — 7-slide deck (press **F** for fullscreen). Arrow keys / space to present.
+- `/` — 8-slide deck (press **F** for fullscreen). Arrow keys / space to present.
+  Each slide has a **Say** line you can read out loud.
 - `/detect` — drop a photo, live scan through MTCNN → conv1 → 512-d → 64 hidden → HENNEN / NOT HENNEN
 - `models/hennen.pt` — the trained artifact (~176 KB). This is what you copy if you want someone else to run *your* person.
 
@@ -115,9 +138,9 @@ Refresh `/detect` and drop photos. Detect **does not** train.
 ### Same laptop, new clone
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/gabo2212/is-it-hennen.git
 cd is-it-hennen
-# if hennen.pt is already in the repo, skip copy
+# hennen.pt is already in the repo
 ```
 
 ### Another computer / classmate / USB
@@ -133,7 +156,7 @@ cp models/hennen.pt /somewhere/safe/hennen.pt
 3. On machine B:
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/gabo2212/is-it-hennen.git
 cd is-it-hennen
 mkdir -p models
 cp /somewhere/safe/hennen.pt models/hennen.pt
