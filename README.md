@@ -6,25 +6,25 @@ The network trains **once**. Detection never retrains. The trained file `models/
 
 ## On another computer
 
+Need **Git** and **Node 20+**. The trained model `models/hennen.pt` is already in the clone.
+
 ```bash
 git clone https://github.com/gabo2212/is-it-hennen.git
 cd is-it-hennen
 npm install
-npm run dev -- --port 43123 --hostname 127.0.0.1
+npm run dev
 ```
 
 Open [http://127.0.0.1:43123](http://127.0.0.1:43123). Press **F** for fullscreen, arrows / space to present.
 
-To use the detector too, in a **second** terminal (first run downloads FaceNet, ~100 MB, once):
+To use the detector too, need **Python 3.10+**. First `npm run setup` downloads PyTorch (large, once). Then in a **second** terminal:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r cnn/requirements.txt
-PYTHONPATH=. python3 -m cnn serve
+npm run setup
+npm run api
 ```
 
-Then open `/detect` and drop a photo. You do **not** need the original Hennen album.
+Then open `/detect` and drop a photo. You do **not** need the original Hennen album. First `npm run api` also downloads FaceNet (~100 MB, once).
 
 ## What you get
 
@@ -40,30 +40,31 @@ Personal training photos stay **out of git** (`data/hennen/` except a README). T
 ## Run the app
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r cnn/requirements.txt
 npm install
+npm run setup    # Python venv + pip (skip if you only need slides)
 ```
 
 Two processes:
 
 ```bash
 # terminal 1 — detector API (loads models/hennen.pt)
-PYTHONPATH=. python3 -m cnn serve
+npm run api
 ```
 
 ```bash
 # terminal 2 — Next.js UI
-npm run dev -- --port 43123 --hostname 127.0.0.1
+npm run dev
 ```
 
 Open [http://127.0.0.1:43123](http://127.0.0.1:43123). Detect talks to FastAPI on **43124**.
 
-CLI check:
+CLI check (after `npm run setup`):
 
 ```bash
-PYTHONPATH=. python3 -m cnn predict path/to/photo.jpg
+# Unix
+PYTHONPATH=. .venv/bin/python -m cnn predict path/to/photo.jpg
+# Windows
+.venv\Scripts\python -m cnn predict path\to\photo.jpg
 ```
 
 ---
@@ -121,8 +122,8 @@ Hold-out photos of that person should print `HENNEN`. Random other faces should 
 `cnn serve` loads the `.pt` at start. After a new train:
 
 ```bash
-# stop the old python -m cnn serve, then:
-PYTHONPATH=. python3 -m cnn serve
+# stop the old npm run api, then:
+npm run api
 ```
 
 Refresh `/detect` and drop photos. Detect **does not** train.
@@ -160,10 +161,10 @@ git clone https://github.com/gabo2212/is-it-hennen.git
 cd is-it-hennen
 mkdir -p models
 cp /somewhere/safe/hennen.pt models/hennen.pt
-pip install -r cnn/requirements.txt
 npm install
-PYTHONPATH=. python3 -m cnn serve
-npm run dev -- --port 43123 --hostname 127.0.0.1
+npm run setup
+npm run api
+npm run dev
 ```
 
 Drop photos on `/detect`. It is still **your** person, without sharing the original album.
