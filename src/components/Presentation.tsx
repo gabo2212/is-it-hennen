@@ -149,6 +149,14 @@ export function Presentation() {
                 {slide.subtitle}
               </p>
             )}
+            {slide.say && (
+              <p className="mt-2 max-w-4xl shrink-0 border-l-2 border-lime pl-3 text-[clamp(0.88rem,1.7vh,1.08rem)] leading-snug text-ink-50">
+                <span className="mr-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-lime">
+                  Say
+                </span>
+                {slide.say}
+              </p>
+            )}
             <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden">
               {slide.content}
             </div>
