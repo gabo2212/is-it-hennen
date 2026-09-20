@@ -17,7 +17,7 @@ npm run dev
 
 Open [http://127.0.0.1:43123](http://127.0.0.1:43123). Press **F** for fullscreen, arrows / space to present.
 
-To use the detector too, need **Python 3.10+**. First `npm run setup` downloads PyTorch (large, once). Then in a **second** terminal:
+To use the detector too, need **Python 3.10–3.12** (this app pins PyTorch 2.2; 3.13/3.14 are too new). First `npm run setup` downloads a CPU PyTorch wheel (large, once). Then in a **second** terminal:
 
 ```bash
 npm run setup
@@ -30,7 +30,7 @@ Then open `/detect` and drop a photo. You do **not** need the original Hennen al
 
 - `/` — 8-slide deck (press **F** for fullscreen). Arrow keys / space to present.
   Each slide has a **Say** line you can read out loud.
-- `/detect` — drop a photo, live scan through MTCNN → conv1 → 512-d → 64 hidden → HENNEN / NOT HENNEN
+- `/detect` — drop a photo, live scan through MTCNN → conv1 → 512-d → 64 hidden → HENNEN / NOT HENNEN, plus a second **Avis de la mouche** from the FlyWire mushroom body and a rotating 3D soma cloud
 - `models/hennen.pt` — the trained artifact (~176 KB). This is what you copy if you want someone else to run *your* person.
 
 Personal training photos stay **out of git** (`data/hennen/` except a README). The committed `hennen.pt` is the gallery + tiny head, not the pictures.
@@ -58,13 +58,28 @@ npm run dev
 
 Open [http://127.0.0.1:43123](http://127.0.0.1:43123). Detect talks to FastAPI on **43124**.
 
+The detector also shows a **FlyWire 3D brain**. That needs two extra one-time commands after `python -m cnn train`:
+
+```bash
+# Unix
+PYTHONPATH=. python3 -m cnn fly_build    # download Codex v783 → public/fly/somas.bin + models/fly_mb.npz
+PYTHONPATH=. python3 -m cnn fly_train    # sugar/choc gains → models/fly_mb_gains.npz (never at detect time)
+# Windows (PowerShell)
+$env:PYTHONPATH = (Get-Location)
+.\.venv\Scripts\python -m cnn fly_build
+.\.venv\Scripts\python -m cnn fly_train
+```
+
+`fly_build` downloads FlyWire dumps into gitignored `data/flywire/` (large). Restart `npm run api` after `fly_train` so `/health` reports `fly_ready`. Without those files the CNN still answers; the fly vote is `null`.
+
 CLI check (after `npm run setup`):
 
 ```bash
 # Unix
 PYTHONPATH=. .venv/bin/python -m cnn predict path/to/photo.jpg
-# Windows
-.venv\Scripts\python -m cnn predict path\to\photo.jpg
+# Windows (PowerShell)
+$env:PYTHONPATH = (Get-Location)
+.\.venv\Scripts\python -m cnn predict path\to\photo.jpg
 ```
 
 ---
@@ -193,11 +208,15 @@ Do **not** `git add data/hennen/`. That folder is gitignored on purpose.
 ## Layout
 
 ```text
-cnn/            train / predict / FastAPI / live viz JSON
+cnn/            train / predict / FastAPI / live viz JSON / mushroom body
 models/hennen.pt
+models/fly_mb.npz          # FlyWire PN→KC→MBON (after fly_build)
+models/fly_mb_gains.npz    # frozen sugar/choc gains (after fly_train)
+public/fly/somas.bin       # 3D soma cloud
 src/app/        Next.js pages
-src/components/ Detector, live NetworkCanvas
+src/components/ Detector, FlyBrain3D, live NetworkCanvas
 data/hennen/    your photos — gitignored
+data/flywire/   Codex dumps — gitignored
 ```
 
 The live canvas is **visualization**, not a second trainer.

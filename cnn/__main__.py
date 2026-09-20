@@ -36,7 +36,7 @@ def main() -> None:
             start_background_window()
         import uvicorn
 
-        uvicorn.run("cnn.serve:app", host="127.0.0.1", port=43124, log_level="info")
+        uvicorn.run("cnn.serve:app", host="127.0.0.1", port=43124, log_level="info", reload=False)
     elif cmd == "predict":
         if not rest:
             raise SystemExit("usage: python -m cnn predict path/to/photo.jpg [--viz]")
@@ -48,12 +48,25 @@ def main() -> None:
 
         result = HennenDetector().predict_path(rest[0])
         print(f"{result.label}  ({result.confidence:.0%} · cosine {result.cosine:.3f})")
+        if result.fly:
+            print(
+                f"mouche {result.fly['label']}  "
+                f"({result.fly['confidence']:.0%} · {len(result.fly['lit'])} somas allumés)"
+            )
         if not result.face_found:
             print(result.detail)
         if viz:
             print("Close the network window to exit.")
             while window.running:
                 time.sleep(0.05)
+    elif cmd == "fly_build":
+        from cnn.fly_build import build
+
+        build()
+    elif cmd == "fly_train":
+        from cnn.fly_train import train_fly
+
+        train_fly()
     elif cmd == "selftest":
         from cnn.selftest import run as selftest
 
@@ -74,6 +87,8 @@ def main() -> None:
     else:
         print("python -m cnn viz                 # 60 FPS live network window")
         print("python -m cnn train [--viz] [--hennen-dir PATH]")
+        print("python -m cnn fly_build            # FlyWire soma cloud + mushroom body")
+        print("python -m cnn fly_train            # sugar/choc gains (after train + fly_build)")
         print("python -m cnn selftest            # train+predict dry run on public faces")
         print("python -m cnn serve [--viz]       # inference API on :43124")
         print("python -m cnn predict img.jpg [--viz]")

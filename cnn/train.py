@@ -22,6 +22,7 @@ from cnn.config import (
     NOT_HENNEN_DIR,
     RECOMMENDED_SHOTS,
     NEGATIVE_TARGET,
+    default_hennen_src,
 )
 from cnn.faces import embed_path
 from cnn.fetch_negatives import fetch_negative_faces
@@ -29,27 +30,32 @@ from cnn.predict import HennenHead, save_artifact
 from cnn.images import list_images
 from cnn.visual import push_active, snapshot_from_head
 
-DESKTOP_HENNEN = Path("/home/gablegoob/Desktop/hennen")
-
-
 def ingest_hennen(src: Path | None = None) -> list[Path]:
-    """Copy photos from the Desktop folder (or another dir) into data/hennen."""
-    src = Path(src) if src is not None else DESKTOP_HENNEN
-    src.mkdir(parents=True, exist_ok=True)
+    """Copy photos from a source folder into data/hennen.
+
+    If photos are already in data/hennen and no --hennen-dir was given,
+    skip the Linux Desktop fallback so Windows clones do not mkdir C:\\home\\...
+    """
     HENNEN_DIR.mkdir(parents=True, exist_ok=True)
+    existing = list_images(HENNEN_DIR)
+    source = Path(src) if src is not None else default_hennen_src()
+    if src is None and existing and not source.exists():
+        print(f"Hennen ingest: using {len(existing)} files already in {HENNEN_DIR}", flush=True)
+        return existing
     copied = 0
-    for path in list_images(src):
-        dest = HENNEN_DIR / path.name
-        try:
-            if dest.resolve() == path.resolve():
-                continue
-        except OSError:
-            pass
-        if not dest.exists():
-            shutil.copy2(path, dest)
-            copied += 1
+    if source.exists():
+        for path in list_images(source):
+            dest = HENNEN_DIR / path.name
+            try:
+                if dest.resolve() == path.resolve():
+                    continue
+            except OSError:
+                pass
+            if not dest.exists():
+                shutil.copy2(path, dest)
+                copied += 1
     paths = list_images(HENNEN_DIR)
-    print(f"Hennen ingest: {copied} new files from {src} · {len(paths)} total in {HENNEN_DIR}", flush=True)
+    print(f"Hennen ingest: {copied} new files from {source} · {len(paths)} total in {HENNEN_DIR}", flush=True)
     return paths
 
 
@@ -182,9 +188,9 @@ def train(*, viz: bool = False, hennen_dir: Path | None = None) -> Path:
     hennen_paths = ingest_hennen(hennen_dir)
     if len(hennen_paths) < MIN_HENNEN_SHOTS:
         raise SystemExit(
-            f"Need at least {MIN_HENNEN_SHOTS} photos of Hennen in {hennen_dir or DESKTOP_HENNEN} "
+            f"Need at least {MIN_HENNEN_SHOTS} photos of Hennen in {hennen_dir or HENNEN_DIR} "
             f"(recommended ~{RECOMMENDED_SHOTS}). Found {len(hennen_paths)}.\n"
-            f"Put jpg/png/heic files in that folder, then re-run: python -m cnn train"
+            f"Put jpg/png/heic files in that folder (or pass --hennen-dir), then re-run: python -m cnn train"
         )
 
     other_paths = list_images(NOT_HENNEN_DIR)

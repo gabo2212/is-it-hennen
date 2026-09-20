@@ -30,8 +30,8 @@ export const IDLE_VIZ: VizPayload = {
   epoch: null,
   epochs: null,
   phase: "idle",
-  title: "Is it hennen?",
-  subtitle: "waiting for a forward pass",
+  title: "C'est Hennen ?",
+  subtitle: "en attente d'une passe avant",
   maps: null,
   face: null,
 };

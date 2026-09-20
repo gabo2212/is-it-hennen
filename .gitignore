@@ -53,7 +53,9 @@ screenshot*.png
 data/not_hennen/kaggle_*
 data/hennen/*
 !data/hennen/README.txt
+data/flywire/
 models/selftest.pt
 models/viz.json
 models/*.tmp
 models/*.json.tmp
+models/_test_mb*.npz

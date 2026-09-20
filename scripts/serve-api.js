@@ -16,10 +16,20 @@ if (!fs.existsSync(venvPy)) {
   process.exit(1);
 }
 
+const pythonPath = process.env.PYTHONPATH
+  ? `${root}${path.delimiter}${process.env.PYTHONPATH}`
+  : root;
+
 const child = spawn(venvPy, ["-m", "cnn", "serve"], {
   cwd: root,
   stdio: "inherit",
-  env: { ...process.env, PYTHONPATH: root },
+  windowsHide: true,
+  env: {
+    ...process.env,
+    PYTHONPATH: pythonPath,
+    PYTHONUTF8: "1",
+    PYTHONIOENCODING: "utf-8",
+  },
 });
 child.on("exit", (code, signal) => {
   if (signal) process.kill(process.pid, signal);

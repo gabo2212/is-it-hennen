@@ -70,7 +70,7 @@ export function NetworkCanvas({
       setHud((prev) => ({
         ...prev,
         live: true,
-        subtitle: prev.subtitle.includes("%") ? prev.subtitle : "scanning…",
+        subtitle: prev.subtitle.includes("%") ? prev.subtitle : "analyse…",
         phase: "detect · scanning",
       }));
     }
@@ -232,11 +232,11 @@ export function NetworkCanvas({
 
       ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
       ctx.fillStyle = "rgba(173,250,30,0.85)";
-      ctx.fillText("MTCNN crop", faceX, top - 12);
+      ctx.fillText("MTCNN", faceX, top - 12);
       ctx.fillText("FaceNet conv1", convX, top - 12);
       ctx.fillText("512-d", embedX, top - 12);
-      ctx.fillText("hidden 64", hidX - 32, top - 12);
-      ctx.fillText("out", outX - 8, top - 12);
+      ctx.fillText("cachée 64", hidX - 32, top - 12);
+      ctx.fillText("sortie", outX - 8, top - 12);
 
       raf = window.requestAnimationFrame(draw);
     };
@@ -254,7 +254,7 @@ export function NetworkCanvas({
     >
       <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-1">
         <div className="min-w-0">
-          <p className="font-display text-lg italic text-ink-50">Live net</p>
+          <p className="font-display text-lg italic text-ink-50">Réseau en direct</p>
           <p className="truncate text-[11px] uppercase tracking-[0.16em] text-ink-400">
             {hud.subtitle || hud.phase}
           </p>
@@ -267,7 +267,7 @@ export function NetworkCanvas({
             )}
             aria-hidden
           />
-          {hud.live || scanning ? "scanning" : "idle"}
+          {hud.live || scanning ? "analyse" : "inactif"}
           {hud.epoch != null ? ` · ep ${hud.epoch}/${hud.epochs ?? "?"}` : null}
           {hud.loss != null ? ` · loss ${hud.loss.toFixed(3)}` : null}
         </div>
@@ -490,7 +490,7 @@ function drawOutputs(
   wave: number,
   now: number,
 ) {
-  const labels = ["NOT", "HENNEN"];
+  const labels = ["NON", "HENNEN"];
   const colors = [CORAL, LIME];
   const ys = [h * 0.34, h * 0.66];
   const pts: { x: number; y: number }[] = [];

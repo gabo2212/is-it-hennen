@@ -57,6 +57,7 @@ class PredictResult:
     cosine: float
     face_found: bool
     detail: str
+    fly: dict | None = None
 
 
 class HennenDetector:
@@ -76,6 +77,24 @@ class HennenDetector:
         self.head.eval()
         self.scaler_mean = blob["scaler_mean"].float()
         self.scaler_std = blob["scaler_std"].float().clamp_min(1e-6)
+        from cnn.fly_mb import FlyMushroom
+
+        self.fly = FlyMushroom.try_load()
+        self._fly_stamp = 0.0
+
+    def _refresh_fly(self) -> None:
+        from cnn.config import FLY_GAINS_PATH, FLY_MB_PATH
+        from cnn.fly_mb import FlyMushroom
+
+        stamp = 0.0
+        if FLY_MB_PATH.exists():
+            stamp += FLY_MB_PATH.stat().st_mtime
+        if FLY_GAINS_PATH.exists():
+            stamp += FLY_GAINS_PATH.stat().st_mtime
+        if stamp == self._fly_stamp:
+            return
+        self._fly_stamp = stamp
+        self.fly = FlyMushroom.try_load()
 
     def _head_prob(self, emb: torch.Tensor) -> float:
         x = (emb - self.scaler_mean) / self.scaler_std
@@ -128,32 +147,34 @@ class HennenDetector:
     def predict_image(self, img: Image.Image) -> PredictResult:
         from cnn.faces import embed_image, set_embed_stage_cb
 
+        self._refresh_fly()
+
         def on_stage(stage: str, face=None, maps=None, emb=None) -> None:
             if stage == "scan":
                 self._push_live(
                     phase="detect · scanning",
-                    subtitle="scanning…",
+                    subtitle="analyse…",
                     face=None,
                     maps=None,
                 )
             elif stage == "crop":
                 self._push_live(
                     phase="detect · scanning",
-                    subtitle="face locked · FaceNet…",
+                    subtitle="visage verrouillé · FaceNet…",
                     face=face,
                     maps=None,
                 )
             elif stage == "conv":
                 self._push_live(
                     phase="detect · scanning",
-                    subtitle="FaceNet conv1 live",
+                    subtitle="FaceNet conv1 en direct",
                     face=face,
                     maps=maps,
                 )
             elif stage == "embed" and emb is not None:
                 self._push_live(
                     phase="detect · scanning",
-                    subtitle="512-d embedding…",
+                    subtitle="empreinte 512-d…",
                     face=face,
                     maps=maps,
                     emb=emb,
@@ -168,16 +189,17 @@ class HennenDetector:
         if emb is None:
             return PredictResult(
                 is_hennen=False,
-                label="NO FACE",
+                label="PAS DE VISAGE",
                 confidence=0.0,
                 cosine=0.0,
                 face_found=False,
-                detail="The CNN needs a visible face in the photo.",
+                detail="Le CNN a besoin d'un visage visible sur la photo.",
+                fly=None,
             )
         cosine = float(torch.nn.functional.cosine_similarity(emb, self.proto, dim=0))
         head_p = self._head_prob(emb)
         is_hennen, p_hennen = decide_hennen(cosine, head_p, self.threshold)
-        label = "HENNEN" if is_hennen else "NOT HENNEN"
+        label = "HENNEN" if is_hennen else "PAS HENNEN"
         confidence = p_hennen if is_hennen else 1.0 - p_hennen
         try:
             from cnn.faces import consume_facenet_viz
@@ -193,13 +215,28 @@ class HennenDetector:
             )
         except Exception:
             pass
+        fly_payload = None
+        if self.fly is not None:
+            try:
+                vote = self.fly.vote(emb.detach().cpu().numpy())
+                fly_payload = {
+                    "is_hennen": vote.is_hennen,
+                    "label": vote.label,
+                    "confidence": round(vote.confidence, 4),
+                    "valence": round(vote.valence, 4),
+                    "sparsity": round(vote.sparsity, 4),
+                    "lit": vote.lit,
+                }
+            except Exception:
+                fly_payload = None
         return PredictResult(
             is_hennen=is_hennen,
             label=label,
             confidence=confidence,
             cosine=cosine,
             face_found=True,
-            detail="Matched Hennen gallery" if is_hennen else "Different person",
+            detail="Correspond à la galerie Hennen" if is_hennen else "Autre personne",
+            fly=fly_payload,
         )
 
     def predict_path(self, path: Path | str) -> PredictResult:

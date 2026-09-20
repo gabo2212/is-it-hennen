@@ -1,0 +1,23 @@
+{
+  "n": 139255,
+  "bytes_per": 16,
+  "classes": [
+    "optic",
+    "central",
+    "sensory",
+    "visual_projection",
+    "visual_centrifugal",
+    "descending",
+    "ascending",
+    "motor",
+    "endocrine"
+  ],
+  "source": "FlyWire Codex FAFB v783 coordinates.csv + classification.csv",
+  "citation": "Dorkenwald et al. Nature 634, 124-138 (2024). CC BY-NC 4.0.",
+  "mb": {
+    "pn": 691,
+    "kc": 1200,
+    "mbon": 96,
+    "dan": 323
+  }
+}

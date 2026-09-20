@@ -8,10 +8,10 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image, UnidentifiedImageError
 
-from cnn.config import ARTIFACT_PATH
+from cnn.config import ARTIFACT_PATH, FLY_GAINS_PATH, FLY_MB_PATH
 from cnn.predict import HennenDetector
 
-app = FastAPI(title="Is it hennen?", version="1.0.0")
+app = FastAPI(title="C'est Hennen ?", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -40,7 +40,7 @@ def _seed_idle_viz() -> None:
                 HennenHead(),
                 torch.zeros(1, 512),
                 phase="idle",
-                subtitle="waiting for a forward pass",
+                subtitle="en attente d'une passe avant",
             )
         )
     except Exception:
@@ -53,7 +53,7 @@ def get_detector() -> HennenDetector:
         if not ARTIFACT_PATH.exists():
             raise HTTPException(
                 status_code=503,
-                detail="Model not trained yet. Put Hennen photos in data/hennen and run python -m cnn.train once.",
+                detail="Modèle pas encore entraîné. Mets des photos de Hennen dans data/hennen et lance python -m cnn.train une fois.",
             )
         _detector = HennenDetector()
     return _detector
@@ -69,7 +69,11 @@ def viz() -> dict:
 @app.get("/health")
 def health() -> dict:
     ready = ARTIFACT_PATH.exists()
-    info: dict = {"ready": ready, "artifact": str(ARTIFACT_PATH)}
+    info: dict = {
+        "ready": ready,
+        "artifact": str(ARTIFACT_PATH),
+        "fly_ready": FLY_MB_PATH.exists() and FLY_GAINS_PATH.exists(),
+    }
     if ready:
         det = get_detector()
         info.update(
@@ -80,6 +84,13 @@ def health() -> dict:
             }
         )
     return info
+
+
+@app.post("/reload")
+def reload_detector() -> dict:
+    global _detector
+    _detector = None
+    return health()
 
 
 @app.on_event("startup")
@@ -93,7 +104,7 @@ async def predict(file: UploadFile = File(...)) -> dict:
     try:
         img = Image.open(io.BytesIO(raw)).convert("RGB")
     except UnidentifiedImageError as exc:
-        raise HTTPException(status_code=400, detail="Not a readable image.") from exc
+        raise HTTPException(status_code=400, detail="Image illisible.") from exc
     result = get_detector().predict_image(img)
     from cnn.visual import read_payload
 
@@ -105,6 +116,7 @@ async def predict(file: UploadFile = File(...)) -> dict:
         "face_found": result.face_found,
         "detail": result.detail,
         "viz": read_payload(),
+        "fly": result.fly,
     }
 
 

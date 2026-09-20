@@ -20,15 +20,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Is it hennen? · CNN Presentation",
+  title: "C'est Hennen ? · Présentation CNN",
   description:
-    "Short CNN presentation: train on Hennen pics, then answer — is it hennen or not?",
+    "Mini-présentation CNN : entraîner sur des photos de Hennen, puis répondre — c'est Hennen, ou pas ?",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="fr"
       className={`${instrument.variable} ${figtree.variable} ${geistMono.variable} h-full dark`}
     >
       <body className="min-h-full bg-[#070708] font-sans antialiased">{children}</body>

@@ -112,6 +112,16 @@
   }
 }
 
+/* Fullscreen / ultrawide: keep the same grid, letterbox inside the slot instead of cropping. */
+.slides-wide figure > div {
+  background: #070708;
+}
+
+.slides-wide figure img {
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
 @utility font-display {
   font-family: var(--font-instrument), ui-serif, Georgia, serif;
 }

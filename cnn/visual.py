@@ -45,7 +45,7 @@ class Snapshot:
     epoch: int | None = None
     epochs: int | None = None
     phase: str = "forward"
-    title: str = "Is it hennen?"
+    title: str = "C'est Hennen ?"
     subtitle: str = ""
 
 
@@ -57,7 +57,7 @@ def snapshot_from_head(
     epoch: int | None = None,
     epochs: int | None = None,
     phase: str = "forward",
-    title: str = "Is it hennen?",
+    title: str = "C'est Hennen ?",
     subtitle: str = "",
     conv_maps: np.ndarray | None = None,
     maps: dict | None = None,
@@ -168,8 +168,8 @@ def read_payload() -> dict:
         "epoch": None,
         "epochs": None,
         "phase": "idle",
-        "title": "Is it hennen?",
-        "subtitle": "waiting for a forward pass",
+        "title": "C'est Hennen ?",
+        "subtitle": "en attente d'une passe avant",
         "maps": None,
         "face": None,
     }
@@ -243,7 +243,7 @@ class NetworkViz:
 
         os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
         pygame.init()
-        pygame.display.set_caption("Is it hennen? · live CNN")
+        pygame.display.set_caption("C'est Hennen ? · CNN en direct")
         screen = pygame.display.set_mode((self.width, self.height))
         clock = pygame.time.Clock()
         font = pygame.font.SysFont("figtree,dejavusans,sans", 18)
@@ -377,7 +377,7 @@ class NetworkViz:
     def _draw_outputs(self, screen, act, x, y, bottom, font_big):
         import pygame
 
-        labels = ["NOT", "HENNEN"]
+        labels = ["NON", "HENNEN"]
         colors = [CORAL, LIME]
         pts = []
         probs = np.zeros(2)
@@ -523,7 +523,7 @@ def run_training_window(
                 epoch=state["epoch"],
                 epochs=epochs,
                 phase="train · after backward()",
-                title="Is it hennen?",
+                title="C'est Hennen ?",
                 subtitle=subtitle or "head 512 → 64 → 2",
             )
         )
@@ -637,7 +637,7 @@ def run_detect_window() -> None:
                 phase="detect · forward pass",
                 subtitle=f"{path.name}  →  {result.label}  ({result.confidence:.0%})",
                 conv_maps=last_conv_maps(holder),
-                title="Is it hennen?",
+                title="C'est Hennen ?",
             )
         )
 
